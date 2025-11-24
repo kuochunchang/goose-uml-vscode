@@ -1,0 +1,113 @@
+{
+  "name": "goose-uml-vscode",
+  "displayName": "Goose UML",
+  "description": "Generate UML class and sequence diagrams for TypeScript, JavaScript, Java, and Python",
+  "version": "1.0.0",
+  "publisher": "kuochunchang",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Visualization"
+  ],
+  "keywords": [
+    "uml",
+    "class-diagram",
+    "sequence-diagram",
+    "typescript",
+    "javascript",
+    "java",
+    "python"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:javascript",
+    "onLanguage:java",
+    "onLanguage:python"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gooseUML.openPanel",
+        "title": "Open UML Panel",
+        "category": "Goose UML",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "gooseUML.generateClassDiagram",
+        "title": "Generate Class Diagram",
+        "category": "Goose UML"
+      },
+      {
+        "command": "gooseUML.generateSequenceDiagram",
+        "title": "Generate Sequence Diagram",
+        "category": "Goose UML"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "gooseUML.openPanel",
+        "key": "ctrl+shift+u",
+        "mac": "cmd+shift+u",
+        "when": "editorLangId == typescript || editorLangId == javascript || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == java || editorLangId == python"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "editorLangId == typescript || editorLangId == javascript || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == java || editorLangId == python",
+          "command": "gooseUML.openPanel",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "editorLangId == typescript || editorLangId == javascript || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == java || editorLangId == python",
+          "command": "gooseUML.openPanel",
+          "group": "gooseUML@0"
+        },
+        {
+          "when": "editorLangId == typescript || editorLangId == javascript || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == java || editorLangId == python",
+          "command": "gooseUML.generateClassDiagram",
+          "group": "gooseUML@1"
+        },
+        {
+          "when": "editorLangId == typescript || editorLangId == javascript || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == java || editorLangId == python",
+          "command": "gooseUML.generateSequenceDiagram",
+          "group": "gooseUML@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "package": "vsce package",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.28.5",
+    "@babel/traverse": "^7.28.5",
+    "@babel/types": "^7.28.5",
+    "tree-sitter": "^0.21.0",
+    "tree-sitter-java": "^0.21.0",
+    "tree-sitter-python": "^0.21.0",
+    "tree-sitter-typescript": "^0.21.0",
+    "@code-review-goose/analysis-types": "file:../../code-review-goose/packages/analysis-types"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.28.0",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "typescript": "^5.3.2",
+    "vitest": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kuochunchang/goose-uml-vscode.git"
+  },
+  "license": "MIT"
+}
