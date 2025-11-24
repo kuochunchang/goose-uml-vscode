@@ -3,15 +3,15 @@
  * Java parser implementation using tree-sitter
  */
 
-import Parser from 'tree-sitter';
-import Java from 'tree-sitter-java';
-import type { ILanguageParser } from '../common/ILanguageParser.js';
-import type { UnifiedAST, SupportedLanguage } from '../../types/index.js';
-import { JavaASTConverter } from './JavaASTConverter.js';
+import Parser from "tree-sitter";
+import Java from "tree-sitter-java";
+import type { ILanguageParser } from "../common/ILanguageParser.js";
+import type { UnifiedAST, SupportedLanguage } from "../../types/index.js";
+import { JavaASTConverter } from "./JavaASTConverter.js";
 
 /**
  * Java parser using tree-sitter
- * 
+ *
  * This parser uses tree-sitter-java to parse Java source code and convert it
  * to a unified AST format compatible with the analysis engine.
  */
@@ -34,7 +34,7 @@ export class JavaParser implements ILanguageParser {
       return this.converter.convert(tree.rootNode, filePath, tree);
     } catch (error) {
       throw new Error(
-        `Failed to parse Java code in ${filePath}: ${(error as Error).message}`
+        `Failed to parse Java code in ${filePath}: ${(error as Error).message}`,
       );
     }
   }
@@ -43,7 +43,7 @@ export class JavaParser implements ILanguageParser {
    * Get supported language
    */
   getSupportedLanguage(): SupportedLanguage {
-    return 'java';
+    return "java";
   }
 
   /**

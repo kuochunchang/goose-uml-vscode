@@ -3,20 +3,22 @@
  * This module contains types for UML diagram generation and storage
  */
 
-import type { ClassInfo, DependencyInfo as ASTDependencyInfo, ImportInfo } from './ast.js';
+import type {
+  ClassInfo,
+  DependencyInfo as ASTDependencyInfo,
+  ImportInfo,
+} from "./ast.js";
 
 /**
  * UML diagram type (supported diagram types)
  */
-export type DiagramType = 'class' | 'sequence';
+export type DiagramType = "class" | "sequence";
 
 /**
  * UML generation mode
  * - 'native': Native TypeScript/JavaScript analysis (no AI)
  */
-export type DiagramGenerationMode = 'native';
-
-
+export type DiagramGenerationMode = "native";
 
 /**
  * Sequence diagram interaction information
@@ -32,7 +34,7 @@ export interface InteractionInfo {
   message: string;
 
   /** Interaction type */
-  type: 'sync' | 'async' | 'return';
+  type: "sync" | "async" | "return";
 }
 
 /**
@@ -58,7 +60,7 @@ export interface SimpleDependencyInfo {
   to: string;
 
   /** Dependency type */
-  type: 'import' | 'composition' | 'aggregation' | 'usage';
+  type: "import" | "composition" | "aggregation" | "usage";
 }
 
 /**
@@ -109,8 +111,6 @@ export interface UMLResult {
 export interface UMLDiagrams {
   /** Class diagram */
   class?: UMLResult;
-
-
 
   /** Sequence diagram */
   sequence?: UMLResult;

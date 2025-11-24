@@ -5,7 +5,7 @@
  * This analyzer is platform-agnostic and works with parsed AST data.
  */
 
-import * as t from '@babel/types';
+import * as t from "@babel/types";
 import type {
   ImportInfo,
   ExportInfo,
@@ -13,7 +13,7 @@ import type {
   ResolvedTypeInfo,
   ClassInfo,
   OOAnalysisResult,
-} from '../types/index.js';
+} from "../types/index.js";
 
 /**
  * OO Analysis Service for extracting object-oriented relationships
@@ -37,7 +37,7 @@ export class OOAnalyzer {
         let isDefault = false;
         let isNamespace = false;
         let namespaceAlias: string | undefined;
-        const isTypeOnly = node.importKind === 'type';
+        const isTypeOnly = node.importKind === "type";
 
         node.specifiers.forEach((spec) => {
           if (t.isImportDefaultSpecifier(spec)) {
@@ -84,7 +84,7 @@ export class OOAnalyzer {
       if (
         t.isCallExpression(node) &&
         t.isIdentifier(node.callee) &&
-        node.callee.name === 'require'
+        node.callee.name === "require"
       ) {
         if (t.isStringLiteral(node.arguments[0])) {
           imports.push({
@@ -101,10 +101,10 @@ export class OOAnalyzer {
       // Recursively traverse child nodes
       for (const key in node) {
         const child = (node as any)[key];
-        if (child && typeof child === 'object') {
+        if (child && typeof child === "object") {
           if (Array.isArray(child)) {
             child.forEach((c) => {
-              if (c && typeof c.type === 'string') {
+              if (c && typeof c.type === "string") {
                 traverseNode(c);
               }
             });
@@ -132,16 +132,16 @@ export class OOAnalyzer {
     const traverseNode = (node: t.Node) => {
       // Default export
       if (t.isExportDefaultDeclaration(node)) {
-        let name = 'default';
-        let exportType: ExportInfo['exportType'] = 'variable';
+        let name = "default";
+        let exportType: ExportInfo["exportType"] = "variable";
 
         const decl = node.declaration;
         if (t.isClassDeclaration(decl) && decl.id) {
           name = decl.id.name;
-          exportType = 'class';
+          exportType = "class";
         } else if (t.isFunctionDeclaration(decl) && decl.id) {
           name = decl.id.name;
-          exportType = 'function';
+          exportType = "function";
         }
         // Note: TSInterfaceDeclaration cannot be default exported in TypeScript
 
@@ -151,7 +151,7 @@ export class OOAnalyzer {
           isReExport: false,
           exportType,
           lineNumber: getLineNumber(node),
-          visibility: 'public',
+          visibility: "public",
         });
       }
 
@@ -164,16 +164,18 @@ export class OOAnalyzer {
         if (node.specifiers.length > 0) {
           node.specifiers.forEach((spec) => {
             if (t.isExportSpecifier(spec)) {
-              const name = t.isIdentifier(spec.exported) ? spec.exported.name : spec.exported.value;
+              const name = t.isIdentifier(spec.exported)
+                ? spec.exported.name
+                : spec.exported.value;
 
               exports.push({
                 name,
                 isDefault: false,
                 isReExport,
                 source,
-                exportType: 'variable',
+                exportType: "variable",
                 lineNumber: getLineNumber(node),
-                visibility: 'public',
+                visibility: "public",
               });
             }
           });
@@ -189,9 +191,9 @@ export class OOAnalyzer {
                   name: varDecl.id.name,
                   isDefault: false,
                   isReExport: false,
-                  exportType: decl.kind === 'const' ? 'const' : 'variable',
+                  exportType: decl.kind === "const" ? "const" : "variable",
                   lineNumber: getLineNumber(node),
-                  visibility: 'public',
+                  visibility: "public",
                 });
               }
             });
@@ -203,21 +205,24 @@ export class OOAnalyzer {
               name: node.declaration.id.name,
               isDefault: false,
               isReExport: false,
-              exportType: 'class',
+              exportType: "class",
               lineNumber: getLineNumber(node),
-              visibility: 'public',
+              visibility: "public",
             });
           }
 
           // export function
-          if (t.isFunctionDeclaration(node.declaration) && node.declaration.id) {
+          if (
+            t.isFunctionDeclaration(node.declaration) &&
+            node.declaration.id
+          ) {
             exports.push({
               name: node.declaration.id.name,
               isDefault: false,
               isReExport: false,
-              exportType: 'function',
+              exportType: "function",
               lineNumber: getLineNumber(node),
-              visibility: 'public',
+              visibility: "public",
             });
           }
 
@@ -227,9 +232,9 @@ export class OOAnalyzer {
               name: node.declaration.id.name,
               isDefault: false,
               isReExport: false,
-              exportType: 'interface',
+              exportType: "interface",
               lineNumber: getLineNumber(node),
-              visibility: 'public',
+              visibility: "public",
             });
           }
 
@@ -239,9 +244,9 @@ export class OOAnalyzer {
               name: node.declaration.id.name,
               isDefault: false,
               isReExport: false,
-              exportType: 'type',
+              exportType: "type",
               lineNumber: getLineNumber(node),
-              visibility: 'public',
+              visibility: "public",
             });
           }
 
@@ -251,9 +256,9 @@ export class OOAnalyzer {
               name: node.declaration.id.name,
               isDefault: false,
               isReExport: false,
-              exportType: 'enum',
+              exportType: "enum",
               lineNumber: getLineNumber(node),
-              visibility: 'public',
+              visibility: "public",
             });
           }
         }
@@ -262,23 +267,23 @@ export class OOAnalyzer {
       // export * from 'module'
       if (t.isExportAllDeclaration(node)) {
         exports.push({
-          name: '*',
+          name: "*",
           isDefault: false,
           isReExport: true,
           source: node.source.value,
-          exportType: 'variable',
+          exportType: "variable",
           lineNumber: getLineNumber(node),
-          visibility: 'public',
+          visibility: "public",
         });
       }
 
       // Recursively traverse child nodes
       for (const key in node) {
         const child = (node as any)[key];
-        if (child && typeof child === 'object') {
+        if (child && typeof child === "object") {
           if (Array.isArray(child)) {
             child.forEach((c) => {
-              if (c && typeof c.type === 'string') {
+              if (c && typeof c.type === "string") {
                 traverseNode(c);
               }
             });
@@ -298,44 +303,48 @@ export class OOAnalyzer {
    */
   resolveTypeInfo(
     typeAnnotation: string | undefined,
-    imports: ImportInfo[]
+    imports: ImportInfo[],
   ): ResolvedTypeInfo | undefined {
-    if (!typeAnnotation || typeAnnotation === 'any' || typeAnnotation === 'unknown') {
+    if (
+      !typeAnnotation ||
+      typeAnnotation === "any" ||
+      typeAnnotation === "unknown"
+    ) {
       return undefined;
     }
 
     const primitiveTypes = [
-      'string',
-      'number',
-      'boolean',
-      'null',
-      'undefined',
-      'void',
-      'never',
-      'bigint',
-      'symbol',
+      "string",
+      "number",
+      "boolean",
+      "null",
+      "undefined",
+      "void",
+      "never",
+      "bigint",
+      "symbol",
     ];
 
     const builtInTypes = [
-      'Array',
-      'Map',
-      'Set',
-      'WeakMap',
-      'WeakSet',
-      'Promise',
-      'Date',
-      'RegExp',
-      'Error',
+      "Array",
+      "Map",
+      "Set",
+      "WeakMap",
+      "WeakSet",
+      "Promise",
+      "Date",
+      "RegExp",
+      "Error",
     ];
 
     // Check if it's an array type
     const isArray =
-      typeAnnotation.endsWith('[]') ||
-      typeAnnotation.startsWith('Array<') ||
-      typeAnnotation === 'Array';
+      typeAnnotation.endsWith("[]") ||
+      typeAnnotation.startsWith("Array<") ||
+      typeAnnotation === "Array";
 
     // Extract base type name
-    let typeName = typeAnnotation.replace(/\[\]/g, '').trim();
+    let typeName = typeAnnotation.replace(/\[\]/g, "").trim();
 
     // Handle generic types like Array<Person>
     const genericMatch = typeName.match(/^(\w+)<(.+)>$/);
@@ -343,20 +352,23 @@ export class OOAnalyzer {
 
     if (genericMatch) {
       typeName = genericMatch[1];
-      genericArgs = genericMatch[2].split(',').map((arg) => arg.trim());
+      genericArgs = genericMatch[2].split(",").map((arg) => arg.trim());
     }
 
     const isPrimitive = primitiveTypes.includes(typeName.toLowerCase());
     const isBuiltIn = builtInTypes.includes(typeName);
-    const isClassType = !isPrimitive && !isBuiltIn && typeName[0] === typeName[0].toUpperCase();
+    const isClassType =
+      !isPrimitive && !isBuiltIn && typeName[0] === typeName[0].toUpperCase();
     const isInterfaceType =
       !isPrimitive &&
       !isBuiltIn &&
-      typeName.startsWith('I') &&
+      typeName.startsWith("I") &&
       typeName[1] === typeName[1].toUpperCase();
 
     // Check if type is imported
-    const importedFrom = imports.find((imp) => imp.specifiers.includes(typeName));
+    const importedFrom = imports.find((imp) =>
+      imp.specifiers.includes(typeName),
+    );
     const isExternal = !!importedFrom;
     const sourceModule = importedFrom?.source;
 
@@ -375,19 +387,22 @@ export class OOAnalyzer {
   /**
    * Extract composition relationships (strong ownership, solid diamond ◆)
    * A owns B, B's lifecycle is controlled by A
-   * 
+   *
    * Composition is detected when:
    * - Property is private (Java/C# style: strong encapsulation)
    * - OR property is an instance variable (non-static, typically initialized in constructor)
    * - AND property type is a class (not primitive or built-in)
    * - AND property is not an array (arrays are typically aggregation)
-   * 
+   *
    * Examples:
    * - Java: class Car { private Engine engine; } -> composition
    * - Python: class Car { def __init__(self): self.engine = Engine() } -> composition
    * - TypeScript: class Car { private engine: Engine; } -> composition
    */
-  extractComposition(classes: ClassInfo[], imports: ImportInfo[]): DependencyInfo[] {
+  extractComposition(
+    classes: ClassInfo[],
+    imports: ImportInfo[],
+  ): DependencyInfo[] {
     const compositions: DependencyInfo[] = [];
 
     for (const cls of classes) {
@@ -400,13 +415,13 @@ export class OOAnalyzer {
           !resolvedType.isPrimitive &&
           !resolvedType.isArray && // Arrays are typically aggregation, not composition
           // Composition if: private (strong encapsulation) OR instance variable (non-static)
-          (prop.visibility === 'private' || !prop.isStatic)
+          (prop.visibility === "private" || !prop.isStatic)
         ) {
           compositions.push({
             from: cls.name,
             to: resolvedType.typeName,
-            type: 'composition',
-            cardinality: '1',
+            type: "composition",
+            cardinality: "1",
             lineNumber: prop.lineNumber ?? 0,
             context: prop.name,
             isExternal: resolvedType.isExternal,
@@ -422,18 +437,21 @@ export class OOAnalyzer {
   /**
    * Extract aggregation relationships (weak ownership, hollow diamond ◇)
    * A uses B, but B can exist independently
-   * 
+   *
    * Aggregation is detected when:
    * - Property type is an array/collection of a class type
    * - Arrays/collections typically represent "has many" relationships (aggregation)
    * - Visibility can be any (private arrays are still aggregation, not composition)
-   * 
+   *
    * Examples:
    * - Java: private List<Wheel> wheels; -> aggregation
    * - TypeScript: private wheels: Wheel[]; -> aggregation
    * - Python: self.wheels = [Wheel() for _ in range(4)] -> aggregation
    */
-  extractAggregation(classes: ClassInfo[], imports: ImportInfo[]): DependencyInfo[] {
+  extractAggregation(
+    classes: ClassInfo[],
+    imports: ImportInfo[],
+  ): DependencyInfo[] {
     const aggregations: DependencyInfo[] = [];
 
     for (const cls of classes) {
@@ -449,8 +467,8 @@ export class OOAnalyzer {
           aggregations.push({
             from: cls.name,
             to: resolvedType.typeName,
-            type: 'aggregation',
-            cardinality: '*',
+            type: "aggregation",
+            cardinality: "*",
             lineNumber: prop.lineNumber ?? 0,
             context: prop.name,
             isExternal: resolvedType.isExternal,
@@ -468,7 +486,10 @@ export class OOAnalyzer {
    * Method uses other class as parameter or return type
    * Example: processData(input: DataModel): Result
    */
-  extractDependency(classes: ClassInfo[], imports: ImportInfo[]): DependencyInfo[] {
+  extractDependency(
+    classes: ClassInfo[],
+    imports: ImportInfo[],
+  ): DependencyInfo[] {
     const dependencies: DependencyInfo[] = [];
 
     for (const cls of classes) {
@@ -477,11 +498,15 @@ export class OOAnalyzer {
         for (const param of method.parameters) {
           const resolvedType = this.resolveTypeInfo(param.type, imports);
 
-          if (resolvedType && resolvedType.isClassType && !resolvedType.isPrimitive) {
+          if (
+            resolvedType &&
+            resolvedType.isClassType &&
+            !resolvedType.isPrimitive
+          ) {
             dependencies.push({
               from: cls.name,
               to: resolvedType.typeName,
-              type: 'dependency',
+              type: "dependency",
               lineNumber: method.lineNumber ?? 0,
               context: `${method.name}(${param.name})`,
               isExternal: resolvedType.isExternal,
@@ -491,7 +516,10 @@ export class OOAnalyzer {
         }
 
         // Check return type
-        const returnTypeResolved = this.resolveTypeInfo(method.returnType, imports);
+        const returnTypeResolved = this.resolveTypeInfo(
+          method.returnType,
+          imports,
+        );
 
         if (
           returnTypeResolved &&
@@ -501,7 +529,7 @@ export class OOAnalyzer {
           dependencies.push({
             from: cls.name,
             to: returnTypeResolved.typeName,
-            type: 'dependency',
+            type: "dependency",
             lineNumber: method.lineNumber ?? 0,
             context: `${method.name}() returns ${returnTypeResolved.typeName}`,
             isExternal: returnTypeResolved.isExternal,
@@ -519,7 +547,10 @@ export class OOAnalyzer {
    * A uses/references B
    * Example: class User { public profile: Profile }
    */
-  extractAssociation(classes: ClassInfo[], imports: ImportInfo[]): DependencyInfo[] {
+  extractAssociation(
+    classes: ClassInfo[],
+    imports: ImportInfo[],
+  ): DependencyInfo[] {
     const associations: DependencyInfo[] = [];
 
     for (const cls of classes) {
@@ -530,14 +561,14 @@ export class OOAnalyzer {
           resolvedType &&
           resolvedType.isClassType &&
           !resolvedType.isPrimitive &&
-          prop.visibility === 'public' &&
+          prop.visibility === "public" &&
           !resolvedType.isArray
         ) {
           associations.push({
             from: cls.name,
             to: resolvedType.typeName,
-            type: 'association',
-            cardinality: '1',
+            type: "association",
+            cardinality: "1",
             lineNumber: prop.lineNumber ?? 0,
             context: prop.name,
             isExternal: resolvedType.isExternal,
@@ -554,7 +585,10 @@ export class OOAnalyzer {
    * Extract dependency injection patterns (constructor injection)
    * Example: constructor(private service: UserService)
    */
-  extractDependencyInjection(classes: ClassInfo[], imports: ImportInfo[]): DependencyInfo[] {
+  extractDependencyInjection(
+    classes: ClassInfo[],
+    imports: ImportInfo[],
+  ): DependencyInfo[] {
     const injections: DependencyInfo[] = [];
 
     for (const cls of classes) {
@@ -562,11 +596,15 @@ export class OOAnalyzer {
         for (const param of cls.constructorParams) {
           const resolvedType = this.resolveTypeInfo(param.type, imports);
 
-          if (resolvedType && resolvedType.isClassType && !resolvedType.isPrimitive) {
+          if (
+            resolvedType &&
+            resolvedType.isClassType &&
+            !resolvedType.isPrimitive
+          ) {
             injections.push({
               from: cls.name,
               to: resolvedType.typeName,
-              type: 'injection',
+              type: "injection",
               lineNumber: cls.lineNumber ?? 0,
               context: `constructor(${param.name})`,
               isExternal: resolvedType.isExternal,

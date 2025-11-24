@@ -3,9 +3,12 @@
  * Generates UML class diagram for the current file
  */
 
-import * as vscode from 'vscode';
-import { DiagramPanel } from '../views/diagram-panel.js';
-import { isSupportedLanguage, getSupportedLanguagesList } from '../utils/language-support.js';
+import * as vscode from "vscode";
+import { DiagramPanel } from "../views/diagram-panel.js";
+import {
+  isSupportedLanguage,
+  getSupportedLanguagesList,
+} from "../utils/language-support.js";
 
 export class GenerateClassDiagramCommand {
   constructor(private readonly context: vscode.ExtensionContext) {}
@@ -15,7 +18,7 @@ export class GenerateClassDiagramCommand {
       // Get active editor
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
-        vscode.window.showErrorMessage('No active editor found');
+        vscode.window.showErrorMessage("No active editor found");
         return;
       }
 
@@ -23,7 +26,7 @@ export class GenerateClassDiagramCommand {
       const document = editor.document;
       if (!isSupportedLanguage(document.languageId)) {
         vscode.window.showWarningMessage(
-          `Class diagram generation is only supported for ${getSupportedLanguagesList()} files`
+          `Class diagram generation is only supported for ${getSupportedLanguagesList()} files`,
         );
         return;
       }
@@ -31,25 +34,30 @@ export class GenerateClassDiagramCommand {
       // Get workspace folder
       const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
       if (!workspaceFolder) {
-        vscode.window.showErrorMessage('File is not in a workspace');
+        vscode.window.showErrorMessage("File is not in a workspace");
         return;
       }
 
       // Open unified panel and generate class diagram
-      const panel = DiagramPanel.createOrShow(this.context.extensionUri, document.uri);
+      const panel = DiagramPanel.createOrShow(
+        this.context.extensionUri,
+        document.uri,
+      );
 
       // Generate class diagram with default settings (depth=0, mode=bidirectional)
-      await panel.generateDiagram(document.uri, 'class', {
+      await panel.generateDiagram(document.uri, "class", {
         depth: 0,
-        mode: 'bidirectional',
+        mode: "bidirectional",
       });
 
-      vscode.window.showInformationMessage('Class diagram panel opened');
+      vscode.window.showInformationMessage("Class diagram panel opened");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      vscode.window.showErrorMessage(`Failed to open UML panel: ${errorMessage}`);
-      console.error('Class diagram generation error:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(
+        `Failed to open UML panel: ${errorMessage}`,
+      );
+      console.error("Class diagram generation error:", error);
     }
   }
-
 }

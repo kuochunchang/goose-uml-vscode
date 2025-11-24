@@ -6,7 +6,12 @@
 /**
  * Supported programming languages
  */
-export type SupportedLanguage = 'javascript' | 'typescript' | 'java' | 'python' | 'go';
+export type SupportedLanguage =
+  | "javascript"
+  | "typescript"
+  | "java"
+  | "python"
+  | "go";
 
 /**
  * Import statement information
@@ -54,31 +59,38 @@ export interface ExportInfo {
   source?: string;
 
   /** Export type (class, function, variable, interface, type) */
-  exportType: 'class' | 'function' | 'variable' | 'interface' | 'type' | 'const' | 'enum';
+  exportType:
+    | "class"
+    | "function"
+    | "variable"
+    | "interface"
+    | "type"
+    | "const"
+    | "enum";
 
   /** Line number in source file */
   lineNumber: number;
 
   /** Visibility modifier (for languages like Java) */
-  visibility?: 'public' | 'protected' | 'private' | 'internal';
+  visibility?: "public" | "protected" | "private" | "internal";
 }
 
 /**
  * Object-oriented relationship types following UML standards
  */
 export type OORelationshipType =
-  | 'inheritance' // extends (solid line with hollow arrow)
-  | 'realization' // implements (dashed line with hollow arrow)
-  | 'composition' // strong ownership (solid diamond ◆)
-  | 'aggregation' // weak ownership (hollow diamond ◇)
-  | 'dependency' // uses/depends on (dashed arrow)
-  | 'association' // references (solid arrow)
-  | 'injection'; // dependency injection (special dependency)
+  | "inheritance" // extends (solid line with hollow arrow)
+  | "realization" // implements (dashed line with hollow arrow)
+  | "composition" // strong ownership (solid diamond ◆)
+  | "aggregation" // weak ownership (hollow diamond ◇)
+  | "dependency" // uses/depends on (dashed arrow)
+  | "association" // references (solid arrow)
+  | "injection"; // dependency injection (special dependency)
 
 /**
  * UML multiplicity/cardinality
  */
-export type Cardinality = '1' | '0..1' | '1..*' | '*' | '0..*';
+export type Cardinality = "1" | "0..1" | "1..*" | "*" | "0..*";
 
 /**
  * Dependency/relationship information between classes
@@ -120,7 +132,7 @@ export interface PropertyInfo {
   type?: string;
 
   /** Visibility modifier */
-  visibility: 'public' | 'private' | 'protected';
+  visibility: "public" | "private" | "protected";
 
   /** Whether this is a static property */
   isStatic?: boolean;
@@ -178,7 +190,7 @@ export interface MethodInfo {
   returnType?: string;
 
   /** Visibility modifier */
-  visibility: 'public' | 'private' | 'protected';
+  visibility: "public" | "private" | "protected";
 
   /** Whether this is a static method */
   isStatic?: boolean;
@@ -233,7 +245,7 @@ export interface ClassInfo {
   name: string;
 
   /** Type: class or interface */
-  type: 'class' | 'interface';
+  type: "class" | "interface";
 
   /** Properties/fields */
   properties: PropertyInfo[];
@@ -262,7 +274,7 @@ export interface ClassInfo {
  */
 export interface InterfaceInfo {
   name: string;
-  type: 'interface';
+  type: "interface";
   properties: PropertyInfo[];
   methods: MethodInfo[];
   /** Extended interfaces */

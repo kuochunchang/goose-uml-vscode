@@ -3,9 +3,9 @@
  * Babel AST to UnifiedAST converter
  */
 
-import traverseModule from '@babel/traverse';
-import type { NodePath } from '@babel/traverse';
-import * as t from '@babel/types';
+import traverseModule from "@babel/traverse";
+import type { NodePath } from "@babel/traverse";
+import * as t from "@babel/types";
 import type {
   UnifiedAST,
   ClassInfo,
@@ -16,7 +16,7 @@ import type {
   PropertyInfo,
   MethodInfo,
   ParameterInfo,
-} from '../../types/index.js';
+} from "../../types/index.js";
 
 // Correct way to import @babel/traverse
 const traverse = (traverseModule as any).default || traverseModule;
@@ -75,7 +75,9 @@ export class BabelASTConverter {
         exports.push(...exportInfos);
       },
 
-      ExportDefaultDeclaration: (path: NodePath<t.ExportDefaultDeclaration>) => {
+      ExportDefaultDeclaration: (
+        path: NodePath<t.ExportDefaultDeclaration>,
+      ) => {
         const exportInfo = this.extractDefaultExport(path.node);
         if (exportInfo) {
           exports.push(exportInfo);
@@ -119,7 +121,10 @@ export class BabelASTConverter {
     const implementsInterfaces: string[] = [];
     if (node.implements) {
       node.implements.forEach((impl) => {
-        if (t.isTSExpressionWithTypeArguments(impl) && t.isIdentifier(impl.expression)) {
+        if (
+          t.isTSExpressionWithTypeArguments(impl) &&
+          t.isIdentifier(impl.expression)
+        ) {
           implementsInterfaces.push(impl.expression.name);
         }
       });
@@ -135,7 +140,7 @@ export class BabelASTConverter {
         if (method) {
           methods.push(method);
           // Extract constructor parameters
-          if (method.name === 'constructor') {
+          if (method.name === "constructor") {
             constructorParams = method.parameters;
           }
         }
@@ -144,11 +149,12 @@ export class BabelASTConverter {
 
     return {
       name: className,
-      type: 'class',
+      type: "class",
       properties,
       methods,
       extends: extendsClass,
-      implements: implementsInterfaces.length > 0 ? implementsInterfaces : undefined,
+      implements:
+        implementsInterfaces.length > 0 ? implementsInterfaces : undefined,
       lineNumber: node.loc?.start.line,
       constructorParams,
     };
@@ -179,7 +185,7 @@ export class BabelASTConverter {
           properties.push({
             name: member.key.name,
             type: this.getTypeAnnotation(member.typeAnnotation),
-            visibility: 'public',
+            visibility: "public",
           });
         }
       } else if (t.isTSMethodSignature(member)) {
@@ -188,7 +194,7 @@ export class BabelASTConverter {
             name: member.key.name,
             parameters: this.extractParameters(member.parameters as any),
             returnType: this.getTypeAnnotation(member.typeAnnotation),
-            visibility: 'public',
+            visibility: "public",
           });
         }
       }
@@ -196,7 +202,7 @@ export class BabelASTConverter {
 
     return {
       name: interfaceName,
-      type: 'interface',
+      type: "interface",
       properties,
       methods,
       extends: extendsInterfaces.length > 0 ? extendsInterfaces : undefined,
@@ -206,14 +212,16 @@ export class BabelASTConverter {
   /**
    * Extract function information
    */
-  private extractFunctionInfo(node: t.FunctionDeclaration): FunctionInfo | null {
+  private extractFunctionInfo(
+    node: t.FunctionDeclaration,
+  ): FunctionInfo | null {
     if (!node.id) return null;
 
     const returnType = this.getTypeAnnotation(node.returnType);
     return {
       name: node.id.name,
       parameters: this.extractParameters(node.params),
-      returnType: returnType || 'void',
+      returnType: returnType || "void",
       isExported: false, // Will be determined during export extraction
       lineNumber: node.loc?.start.line,
     };
@@ -227,7 +235,9 @@ export class BabelASTConverter {
 
     const typeStr = this.getTypeAnnotation(node.typeAnnotation);
     const isArray = typeStr
-      ? typeStr.endsWith('[]') || typeStr.startsWith('Array<') || typeStr === 'Array'
+      ? typeStr.endsWith("[]") ||
+        typeStr.startsWith("Array<") ||
+        typeStr === "Array"
       : false;
     const isClassType = typeStr ? this.isClassTypeName(typeStr) : false;
 
@@ -267,7 +277,7 @@ export class BabelASTConverter {
           type: this.getTypeAnnotation(param.typeAnnotation),
         };
       }
-      return { name: 'unknown' };
+      return { name: "unknown" };
     });
   }
 
@@ -280,7 +290,7 @@ export class BabelASTConverter {
     let isDefault = false;
     let isNamespace = false;
     let namespaceAlias: string | undefined;
-    const isTypeOnly = node.importKind === 'type';
+    const isTypeOnly = node.importKind === "type";
 
     node.specifiers.forEach((spec) => {
       if (t.isImportDefaultSpecifier(spec)) {
@@ -324,19 +334,22 @@ export class BabelASTConverter {
               name: decl.id.name,
               isDefault: false,
               isReExport: false,
-              exportType: 'variable',
+              exportType: "variable",
               lineNumber: node.loc?.start.line ?? 0,
             });
           }
         });
       }
       // Export function
-      else if (t.isFunctionDeclaration(node.declaration) && node.declaration.id) {
+      else if (
+        t.isFunctionDeclaration(node.declaration) &&
+        node.declaration.id
+      ) {
         exports.push({
           name: node.declaration.id.name,
           isDefault: false,
           isReExport: false,
-          exportType: 'function',
+          exportType: "function",
           lineNumber: node.loc?.start.line ?? 0,
         });
       }
@@ -346,7 +359,7 @@ export class BabelASTConverter {
           name: node.declaration.id.name,
           isDefault: false,
           isReExport: false,
-          exportType: 'class',
+          exportType: "class",
           lineNumber: node.loc?.start.line ?? 0,
         });
       }
@@ -361,7 +374,7 @@ export class BabelASTConverter {
             isDefault: false,
             isReExport: !!node.source,
             source: node.source?.value,
-            exportType: 'variable',
+            exportType: "variable",
             lineNumber: node.loc?.start.line ?? 0,
           });
         }
@@ -374,21 +387,26 @@ export class BabelASTConverter {
   /**
    * Extract default export
    */
-  private extractDefaultExport(node: t.ExportDefaultDeclaration): ExportInfo | null {
+  private extractDefaultExport(
+    node: t.ExportDefaultDeclaration,
+  ): ExportInfo | null {
     if (t.isIdentifier(node.declaration)) {
       return {
         name: node.declaration.name,
         isDefault: true,
         isReExport: false,
-        exportType: 'variable',
+        exportType: "variable",
         lineNumber: node.loc?.start.line ?? 0,
       };
-    } else if (t.isFunctionDeclaration(node.declaration) && node.declaration.id) {
+    } else if (
+      t.isFunctionDeclaration(node.declaration) &&
+      node.declaration.id
+    ) {
       return {
         name: node.declaration.id.name,
         isDefault: true,
         isReExport: false,
-        exportType: 'function',
+        exportType: "function",
         lineNumber: node.loc?.start.line ?? 0,
       };
     } else if (t.isClassDeclaration(node.declaration) && node.declaration.id) {
@@ -396,7 +414,7 @@ export class BabelASTConverter {
         name: node.declaration.id.name,
         isDefault: true,
         isReExport: false,
-        exportType: 'class',
+        exportType: "class",
         lineNumber: node.loc?.start.line ?? 0,
       };
     }
@@ -424,13 +442,13 @@ export class BabelASTConverter {
     if (!tsType) return undefined;
 
     // Primitive types
-    if (t.isTSStringKeyword(tsType)) return 'string';
-    if (t.isTSNumberKeyword(tsType)) return 'number';
-    if (t.isTSBooleanKeyword(tsType)) return 'boolean';
-    if (t.isTSVoidKeyword(tsType)) return 'void';
-    if (t.isTSAnyKeyword(tsType)) return 'any';
-    if (t.isTSNullKeyword(tsType)) return 'null';
-    if (t.isTSUndefinedKeyword(tsType)) return 'undefined';
+    if (t.isTSStringKeyword(tsType)) return "string";
+    if (t.isTSNumberKeyword(tsType)) return "number";
+    if (t.isTSBooleanKeyword(tsType)) return "boolean";
+    if (t.isTSVoidKeyword(tsType)) return "void";
+    if (t.isTSAnyKeyword(tsType)) return "any";
+    if (t.isTSNullKeyword(tsType)) return "null";
+    if (t.isTSUndefinedKeyword(tsType)) return "undefined";
 
     // Type reference (e.g., Wheel, Engine, Array<T>)
     if (t.isTSTypeReference(tsType) && t.isIdentifier(tsType.typeName)) {
@@ -439,7 +457,7 @@ export class BabelASTConverter {
         const params = tsType.typeParameters.params
           .map((p: any) => this.getTSTypeString(p))
           .filter((p: any) => p)
-          .join(', ');
+          .join(", ");
         return `${typeName}<${params}>`;
       }
       return typeName;
@@ -448,19 +466,23 @@ export class BabelASTConverter {
     // Array type (T[])
     if (t.isTSArrayType(tsType)) {
       const elementType = this.getTSTypeString(tsType.elementType);
-      return elementType ? `${elementType}[]` : 'Array';
+      return elementType ? `${elementType}[]` : "Array";
     }
 
     // Union type (A | B)
     if (t.isTSUnionType(tsType)) {
-      const types = tsType.types.map((t: any) => this.getTSTypeString(t)).filter((t: any) => t);
-      return types.length > 0 ? types.join(' | ') : undefined;
+      const types = tsType.types
+        .map((t: any) => this.getTSTypeString(t))
+        .filter((t: any) => t);
+      return types.length > 0 ? types.join(" | ") : undefined;
     }
 
     // Intersection type (A & B)
     if (t.isTSIntersectionType(tsType)) {
-      const types = tsType.types.map((t: any) => this.getTSTypeString(t)).filter((t: any) => t);
-      return types.length > 0 ? types.join(' & ') : undefined;
+      const types = tsType.types
+        .map((t: any) => this.getTSTypeString(t))
+        .filter((t: any) => t);
+      return types.length > 0 ? types.join(" & ") : undefined;
     }
 
     return undefined;
@@ -469,10 +491,12 @@ export class BabelASTConverter {
   /**
    * Get visibility modifier from class member
    */
-  private getVisibility(node: t.ClassProperty | t.ClassMethod): 'public' | 'protected' | 'private' {
-    if (node.accessibility === 'private') return 'private';
-    if (node.accessibility === 'protected') return 'protected';
-    return 'public';
+  private getVisibility(
+    node: t.ClassProperty | t.ClassMethod,
+  ): "public" | "protected" | "private" {
+    if (node.accessibility === "private") return "private";
+    if (node.accessibility === "protected") return "protected";
+    return "public";
   }
 
   /**
@@ -480,16 +504,23 @@ export class BabelASTConverter {
    */
   private isClassTypeName(typeName: string): boolean {
     // Simple heuristic: if it starts with uppercase, it's likely a class
-    return /^[A-Z]/.test(typeName) && !['Array', 'Object', 'String', 'Number', 'Boolean'].includes(typeName);
+    return (
+      /^[A-Z]/.test(typeName) &&
+      !["Array", "Object", "String", "Number", "Boolean"].includes(typeName)
+    );
   }
 
   /**
    * Detect language from file path
    */
-  private detectLanguage(filePath: string): 'typescript' | 'javascript' {
-    if (/\.tsx?$/.test(filePath) || /\.mts$/.test(filePath) || /\.cts$/.test(filePath)) {
-      return 'typescript';
+  private detectLanguage(filePath: string): "typescript" | "javascript" {
+    if (
+      /\.tsx?$/.test(filePath) ||
+      /\.mts$/.test(filePath) ||
+      /\.cts$/.test(filePath)
+    ) {
+      return "typescript";
     }
-    return 'javascript';
+    return "javascript";
   }
 }

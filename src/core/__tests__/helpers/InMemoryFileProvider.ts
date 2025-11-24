@@ -1,5 +1,5 @@
-import { IFileProvider } from '../../types/providers.js';
-import * as path from 'path';
+import { IFileProvider } from "../../types/providers.js";
+import * as path from "path";
 
 /**
  * In-memory file provider for testing
@@ -61,12 +61,12 @@ export class InMemoryFileProvider implements IFileProvider {
 
   async resolveImport(from: string, to: string): Promise<string | null> {
     // Handle relative imports
-    if (to.startsWith('./') || to.startsWith('../')) {
+    if (to.startsWith("./") || to.startsWith("../")) {
       const fromDir = path.dirname(this.normalizePath(from));
       const resolved = path.join(fromDir, to);
 
       // Try different extensions
-      const extensions = ['', '.ts', '.tsx', '.js', '.jsx', '.java', '.py'];
+      const extensions = ["", ".ts", ".tsx", ".js", ".jsx", ".java", ".py"];
       for (const ext of extensions) {
         const fullPath = resolved + ext;
         if (await this.exists(fullPath)) {
@@ -89,22 +89,22 @@ export class InMemoryFileProvider implements IFileProvider {
     // **/*.ts -> match all .ts files
     // **/*.{ts,tsx} -> match .ts or .tsx files
     // src/**/*.java -> match all .java files in src directory
-    let regexPattern = pattern
-      .replace(/\\/g, '/')
+    const regexPattern = pattern
+      .replace(/\\/g, "/")
       // Handle brace expansion FIRST: {ts,tsx} -> (ts|tsx)
-      .replace(/\{([^}]+)\}/g, (_, p1) => `(${p1.replace(/,/g, '|')})`)
+      .replace(/\{([^}]+)\}/g, (_, p1) => `(${p1.replace(/,/g, "|")})`)
       // Replace ** before single * to avoid conflicts
-      .replace(/\*\*/g, '<<<DOUBLESTAR>>>')
+      .replace(/\*\*/g, "<<<DOUBLESTAR>>>")
       // Escape dots
-      .replace(/\./g, '\\.')
+      .replace(/\./g, "\\.")
       // Replace single * (matches within path segment)
-      .replace(/\*/g, '[^/]*')
+      .replace(/\*/g, "[^/]*")
       // Replace ** (matches across path segments)
-      .replace(/<<<DOUBLESTAR>>>/g, '.*');
+      .replace(/<<<DOUBLESTAR>>>/g, ".*");
 
     const regex = new RegExp(`^${regexPattern}$`);
 
-    return allPaths.filter(p => regex.test(p.replace(/\\/g, '/')));
+    return allPaths.filter((p) => regex.test(p.replace(/\\/g, "/")));
   }
 
   async exists(filePath: string): Promise<boolean> {
@@ -117,6 +117,6 @@ export class InMemoryFileProvider implements IFileProvider {
    * Normalize path to use forward slashes and remove trailing slashes
    */
   private normalizePath(filePath: string): string {
-    return filePath.replace(/\\/g, '/').replace(/\/$/, '');
+    return filePath.replace(/\\/g, "/").replace(/\/$/, "");
   }
 }

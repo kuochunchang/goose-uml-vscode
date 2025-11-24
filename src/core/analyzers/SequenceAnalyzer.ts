@@ -6,8 +6,8 @@
  * This analyzer is platform-agnostic and works with parsed AST data.
  */
 
-import * as t from '@babel/types';
-import traverseModule from '@babel/traverse';
+import * as t from "@babel/types";
+import traverseModule from "@babel/traverse";
 
 // Correct way to import @babel/traverse
 const traverse = (traverseModule as any).default || traverseModule;
@@ -17,7 +17,7 @@ const traverse = (traverseModule as any).default || traverseModule;
  */
 export interface SequenceParticipant {
   name: string;
-  type: 'class' | 'function' | 'module'; // Classes are objects, function is for top-level functions, module is fallback
+  type: "class" | "function" | "module"; // Classes are objects, function is for top-level functions, module is fallback
   lineNumber?: number;
 }
 
@@ -28,7 +28,7 @@ export interface SequenceInteraction {
   from: string; // Calling class/module
   to: string; // Called class/module
   message: string; // Method name with arguments
-  type: 'sync' | 'async' | 'return';
+  type: "sync" | "async" | "return";
   lineNumber?: number;
 }
 
@@ -75,7 +75,7 @@ export class SequenceAnalyzer {
 
     // If no classes and no top-level functions found, add a "Module" participant as fallback
     if (this.classes.size === 0 && this.topLevelFunctions.size === 0) {
-      this.addParticipant('Module', 'module');
+      this.addParticipant("Module", "module");
     }
 
     // Second pass: track property assignments (this.prop = new Class())
@@ -101,10 +101,16 @@ export class SequenceAnalyzer {
         const node = path.node as t.ImportDeclaration;
         // Extract imported class names
         node.specifiers.forEach((specifier) => {
-          if (t.isImportSpecifier(specifier) && t.isIdentifier(specifier.imported)) {
+          if (
+            t.isImportSpecifier(specifier) &&
+            t.isIdentifier(specifier.imported)
+          ) {
             // Named import: import { ClassName } from '...'
             this.importedClasses.add(specifier.imported.name);
-          } else if (t.isImportDefaultSpecifier(specifier) && t.isIdentifier(specifier.local)) {
+          } else if (
+            t.isImportDefaultSpecifier(specifier) &&
+            t.isIdentifier(specifier.local)
+          ) {
             // Default import: import ClassName from '...'
             this.importedClasses.add(specifier.local.name);
           }
@@ -115,7 +121,7 @@ export class SequenceAnalyzer {
         if (node.id) {
           const className = node.id.name;
           this.classes.set(className, new Set());
-          this.addParticipant(className, 'class', node.loc?.start.line);
+          this.addParticipant(className, "class", node.loc?.start.line);
 
           // Extract methods
           node.body.body.forEach((member) => {
@@ -129,11 +135,12 @@ export class SequenceAnalyzer {
         const node = path.node as t.FunctionDeclaration;
         // Only process top-level functions (not nested in classes)
         // Check if function is at program level
-        const isTopLevel = path.parent.type === 'Program' || path.getFunctionParent() === null;
+        const isTopLevel =
+          path.parent.type === "Program" || path.getFunctionParent() === null;
         if (node.id && isTopLevel) {
           const functionName = node.id.name;
           this.topLevelFunctions.add(functionName);
-          this.addParticipant(functionName, 'function', node.loc?.start.line);
+          this.addParticipant(functionName, "function", node.loc?.start.line);
         }
       },
     });
@@ -152,7 +159,7 @@ export class SequenceAnalyzer {
         const node = path.node as t.ClassMethod;
 
         // Check if this is a constructor
-        if (t.isIdentifier(node.key) && node.key.name === 'constructor') {
+        if (t.isIdentifier(node.key) && node.key.name === "constructor") {
           // Build a map of parameter names to their types
           const paramTypes = new Map<string, string>();
 
@@ -168,10 +175,15 @@ export class SequenceAnalyzer {
                 const typeNode = parameter.typeAnnotation.typeAnnotation;
 
                 // Extract type name from TypeScript type annotation
-                if (t.isTSTypeReference(typeNode) && t.isIdentifier(typeNode.typeName)) {
+                if (
+                  t.isTSTypeReference(typeNode) &&
+                  t.isIdentifier(typeNode.typeName)
+                ) {
                   // Implicit assignment for parameter properties: this.paramName = paramName
                   this.propertyTypes.set(paramName, typeNode.typeName.name);
-                  console.log(`[SequenceAnalyzer] Tracked property (TSParameterProperty): ${paramName} -> ${typeNode.typeName.name}`);
+                  console.log(
+                    `[SequenceAnalyzer] Tracked property (TSParameterProperty): ${paramName} -> ${typeNode.typeName.name}`,
+                  );
                 }
               }
             }
@@ -185,9 +197,14 @@ export class SequenceAnalyzer {
               const typeNode = param.typeAnnotation.typeAnnotation;
 
               // Extract type name from TypeScript type annotation
-              if (t.isTSTypeReference(typeNode) && t.isIdentifier(typeNode.typeName)) {
+              if (
+                t.isTSTypeReference(typeNode) &&
+                t.isIdentifier(typeNode.typeName)
+              ) {
                 paramTypes.set(paramName, typeNode.typeName.name);
-                console.log(`[SequenceAnalyzer] Tracked param type: ${paramName} -> ${typeNode.typeName.name}`);
+                console.log(
+                  `[SequenceAnalyzer] Tracked param type: ${paramName} -> ${typeNode.typeName.name}`,
+                );
               }
             }
           });
@@ -213,7 +230,10 @@ export class SequenceAnalyzer {
 
                   // If the param has a type annotation, track it
                   if (paramTypes.has(paramName)) {
-                    this.propertyTypes.set(propertyName, paramTypes.get(paramName)!);
+                    this.propertyTypes.set(
+                      propertyName,
+                      paramTypes.get(paramName)!,
+                    );
                   }
                 }
               }
@@ -233,7 +253,10 @@ export class SequenceAnalyzer {
           const propertyName = node.key.name;
           const typeNode = node.typeAnnotation.typeAnnotation;
 
-          if (t.isTSTypeReference(typeNode) && t.isIdentifier(typeNode.typeName)) {
+          if (
+            t.isTSTypeReference(typeNode) &&
+            t.isIdentifier(typeNode.typeName)
+          ) {
             this.propertyTypes.set(propertyName, typeNode.typeName.name);
           }
         }
@@ -291,13 +314,21 @@ export class SequenceAnalyzer {
           const node = path.node as t.ClassMethod;
           const classPath = path.findParent((p: any) => p.isClassDeclaration());
 
-          if (classPath && t.isClassDeclaration(classPath.node) && classPath.node.id) {
+          if (
+            classPath &&
+            t.isClassDeclaration(classPath.node) &&
+            classPath.node.id
+          ) {
             this.currentClass = classPath.node.id.name;
-            this.currentMethod = t.isIdentifier(node.key) ? node.key.name : null;
+            this.currentMethod = t.isIdentifier(node.key)
+              ? node.key.name
+              : null;
 
             // Mark as entry point if it's a public method
-            if (this.currentMethod && node.kind === 'method') {
-              this.entryPoints.add(`${this.currentClass}.${this.currentMethod}`);
+            if (this.currentMethod && node.kind === "method") {
+              this.entryPoints.add(
+                `${this.currentClass}.${this.currentMethod}`,
+              );
             }
           }
         },
@@ -313,7 +344,8 @@ export class SequenceAnalyzer {
           const node = path.node as t.FunctionDeclaration;
           // Only process top-level functions (when there are no classes)
           // Check if function is at program level (not nested in other functions or classes)
-          const isTopLevel = path.parent.type === 'Program' || path.getFunctionParent() === null;
+          const isTopLevel =
+            path.parent.type === "Program" || path.getFunctionParent() === null;
           if (this.classes.size === 0 && node.id && isTopLevel) {
             this.currentClass = node.id.name; // Use function name as "class"
             this.currentMethod = null; // Top-level, not a method
@@ -322,7 +354,8 @@ export class SequenceAnalyzer {
         },
         exit: (path: any) => {
           const node = path.node as t.FunctionDeclaration;
-          const isTopLevel = path.parent.type === 'Program' || path.getFunctionParent() === null;
+          const isTopLevel =
+            path.parent.type === "Program" || path.getFunctionParent() === null;
           if (
             this.classes.size === 0 &&
             node.id &&
@@ -378,7 +411,10 @@ export class SequenceAnalyzer {
   /**
    * Analyze a call expression and record the interaction
    */
-  private analyzeCallExpression(node: t.CallExpression | t.NewExpression, isAsync: boolean): void {
+  private analyzeCallExpression(
+    node: t.CallExpression | t.NewExpression,
+    isAsync: boolean,
+  ): void {
     // For classes, we need both currentClass and currentMethod
     // For top-level functions, we only need currentClass (currentMethod is null)
     if (!this.currentClass) return;
@@ -404,16 +440,20 @@ export class SequenceAnalyzer {
 
     // Add target class/function as participant if not already present
     if (!this.participants.has(targetClass)) {
-      const participantType = this.topLevelFunctions.has(targetClass) ? 'function' : 'class';
+      const participantType = this.topLevelFunctions.has(targetClass)
+        ? "function"
+        : "class";
       this.addParticipant(targetClass, participantType, node.loc?.start.line);
       // console.log(`[SequenceAnalyzer] Added participant: ${targetClass}`);
     }
 
     // Create interaction message (method call)
-    const args = node.arguments ? node.arguments.map((arg) => this.getExpressionLabel(arg)).join(', ') : '';
+    const args = node.arguments
+      ? node.arguments.map((arg) => this.getExpressionLabel(arg)).join(", ")
+      : "";
     const message = args ? `${methodName}(${args})` : `${methodName}()`;
 
-    const interactionType = isAsync ? 'async' : 'sync';
+    const interactionType = isAsync ? "async" : "sync";
 
     // Add interaction from current class to target class
     this.addInteraction(
@@ -421,18 +461,24 @@ export class SequenceAnalyzer {
       targetClass,
       message,
       interactionType,
-      node.loc?.start.line
+      node.loc?.start.line,
     );
 
     // Add return interaction
-    this.addInteraction(targetClass, this.currentClass, 'return', 'return', node.loc?.start.line);
+    this.addInteraction(
+      targetClass,
+      this.currentClass,
+      "return",
+      "return",
+      node.loc?.start.line,
+    );
   }
 
   /**
    * Get call information (target class and method name)
    */
   private getCallInfo(
-    callee: t.Expression | t.V8IntrinsicIdentifier | t.NewExpression
+    callee: t.Expression | t.V8IntrinsicIdentifier | t.NewExpression,
   ): { targetClass: string; methodName: string } | null {
     // Case 1: this.method() - call within same class
     if (t.isMemberExpression(callee)) {
@@ -447,9 +493,14 @@ export class SequenceAnalyzer {
       } else if (t.isMemberExpression(callee.object)) {
         // this.property.method() - chained member expression
         // e.g., this.db.query()
-        if (t.isThisExpression(callee.object.object) && t.isIdentifier(callee.object.property)) {
+        if (
+          t.isThisExpression(callee.object.object) &&
+          t.isIdentifier(callee.object.property)
+        ) {
           const propertyName = callee.object.property.name;
-          const methodName = t.isIdentifier(callee.property) ? callee.property.name : 'method';
+          const methodName = t.isIdentifier(callee.property)
+            ? callee.property.name
+            : "method";
 
           // Try to find the class of this property
           const targetClass = this.findClassForObject(propertyName);
@@ -481,7 +532,9 @@ export class SequenceAnalyzer {
           // this.prop1.prop2.method() - depth 3
           // e.g. this.db.connection.execute()
           const propertyName = callee.object.object.property.name; // 'db'
-          const methodName = t.isIdentifier(callee.property) ? callee.property.name : 'method';
+          const methodName = t.isIdentifier(callee.property)
+            ? callee.property.name
+            : "method";
 
           // Try to find the class of this property
           const targetClass = this.findClassForObject(propertyName);
@@ -496,7 +549,9 @@ export class SequenceAnalyzer {
       } else if (t.isIdentifier(callee.object)) {
         // someObject.method() - call to another class instance
         const objectName = callee.object.name;
-        const methodName = t.isIdentifier(callee.property) ? callee.property.name : 'method';
+        const methodName = t.isIdentifier(callee.property)
+          ? callee.property.name
+          : "method";
 
         // Try to find the class of this object
         const targetClass = this.findClassForObject(objectName);
@@ -526,7 +581,9 @@ export class SequenceAnalyzer {
     // Case 2: ClassName.staticMethod() - static method call
     if (t.isMemberExpression(callee) && t.isIdentifier(callee.object)) {
       const className = callee.object.name;
-      const methodName = t.isIdentifier(callee.property) ? callee.property.name : 'method';
+      const methodName = t.isIdentifier(callee.property)
+        ? callee.property.name
+        : "method";
 
       // Check if this is a known class
       if (this.classes.has(className)) {
@@ -548,7 +605,7 @@ export class SequenceAnalyzer {
       }
       // Fallback to Module if not a known function
       return {
-        targetClass: 'Module',
+        targetClass: "Module",
         methodName: callee.name,
       };
     }
@@ -557,7 +614,7 @@ export class SequenceAnalyzer {
     if (t.isNewExpression(callee) && t.isIdentifier(callee.callee)) {
       return {
         targetClass: callee.callee.name,
-        methodName: 'constructor',
+        methodName: "constructor",
       };
     }
 
@@ -582,7 +639,8 @@ export class SequenceAnalyzer {
     const resolvedClass = this.findClassForObject(targetClass);
     if (
       resolvedClass &&
-      (this.classes.has(resolvedClass) || this.importedClasses.has(resolvedClass))
+      (this.classes.has(resolvedClass) ||
+        this.importedClasses.has(resolvedClass))
     ) {
       return false;
     }
@@ -590,28 +648,28 @@ export class SequenceAnalyzer {
     // Internal property names that should never create participants
     // These are common property names used in internal implementation
     const internalPropertyNames = new Set([
-      'participants',
-      'interactions',
-      'classes',
-      'entryPoints',
-      'metadata',
-      'properties',
-      'methods',
-      'relationships',
-      'imports',
-      'exports',
-      'specifiers',
-      'elements',
-      'items',
-      'nodes',
-      'children',
-      'child',
-      'parent',
-      'args',
-      'params',
-      'options',
-      'config',
-      'settings',
+      "participants",
+      "interactions",
+      "classes",
+      "entryPoints",
+      "metadata",
+      "properties",
+      "methods",
+      "relationships",
+      "imports",
+      "exports",
+      "specifiers",
+      "elements",
+      "items",
+      "nodes",
+      "children",
+      "child",
+      "parent",
+      "args",
+      "params",
+      "options",
+      "config",
+      "settings",
     ]);
 
     // Filter out internal property names immediately
@@ -621,82 +679,82 @@ export class SequenceAnalyzer {
 
     // Common built-in methods that should be ignored
     const builtInMethods = new Set([
-      'push',
-      'pop',
-      'shift',
-      'unshift',
-      'slice',
-      'splice',
-      'concat',
-      'join',
-      'map',
-      'filter',
-      'reduce',
-      'forEach',
-      'find',
-      'findIndex',
-      'some',
-      'every',
-      'includes',
-      'indexOf',
-      'lastIndexOf',
-      'sort',
-      'reverse',
-      'set',
-      'get',
-      'has',
-      'delete',
-      'clear',
-      'add',
-      'values',
-      'keys',
-      'entries',
-      'toString',
-      'valueOf',
-      'toJSON',
-      'hasOwnProperty',
-      'isPrototypeOf',
-      'propertyIsEnumerable',
+      "push",
+      "pop",
+      "shift",
+      "unshift",
+      "slice",
+      "splice",
+      "concat",
+      "join",
+      "map",
+      "filter",
+      "reduce",
+      "forEach",
+      "find",
+      "findIndex",
+      "some",
+      "every",
+      "includes",
+      "indexOf",
+      "lastIndexOf",
+      "sort",
+      "reverse",
+      "set",
+      "get",
+      "has",
+      "delete",
+      "clear",
+      "add",
+      "values",
+      "keys",
+      "entries",
+      "toString",
+      "valueOf",
+      "toJSON",
+      "hasOwnProperty",
+      "isPrototypeOf",
+      "propertyIsEnumerable",
     ]);
 
     // Common built-in type names (both lowercase and capitalized)
     const builtInTypeNames = new Set([
-      'array',
-      'Array',
-      'map',
-      'Map',
-      'set',
-      'Set',
-      'console',
-      'Console',
-      'math',
-      'Math',
-      'json',
-      'JSON',
-      'date',
-      'Date',
-      'regexp',
-      'RegExp',
-      'promise',
-      'Promise',
-      'error',
-      'Error',
-      'arraybuffer',
-      'ArrayBuffer',
-      'dataview',
-      'DataView',
-      'weakmap',
-      'WeakMap',
-      'weakset',
-      'WeakSet',
-      'string',
-      'String',
-      'number',
-      'Number',
-      'boolean',
-      'Boolean',
-      'object',
-      'Object',
+      "array",
+      "Array",
+      "map",
+      "Map",
+      "set",
+      "Set",
+      "console",
+      "Console",
+      "math",
+      "Math",
+      "json",
+      "JSON",
+      "date",
+      "Date",
+      "regexp",
+      "RegExp",
+      "promise",
+      "Promise",
+      "error",
+      "Error",
+      "arraybuffer",
+      "ArrayBuffer",
+      "dataview",
+      "DataView",
+      "weakmap",
+      "WeakMap",
+      "weakset",
+      "WeakSet",
+      "string",
+      "String",
+      "number",
+      "Number",
+      "boolean",
+      "Boolean",
+      "object",
+      "Object",
     ]);
 
     // Check if target is a known built-in type (case-sensitive check first)
@@ -718,39 +776,42 @@ export class SequenceAnalyzer {
 
     // Filter out TypeScript/JavaScript type names that are commonly used as variables
     const commonVariableNames = new Set([
-      'typeann',
-      'typeannotation',
-      'typename',
-      'typeName',
-      'node',
-      'element',
-      'item',
-      'result',
-      'data',
-      'value',
-      'obj',
-      'arr',
-      'str',
-      'num',
-      'bool',
-      'fn',
-      'func',
-      'callback',
-      'arg',
-      'args',
-      'param',
-      'params',
-      'opt',
-      'opts',
-      'primitiveTypes',
-      'primitivetypes',
-      'builtInTypes',
-      'builtintypes',
-      'types',
-      'type',
+      "typeann",
+      "typeannotation",
+      "typename",
+      "typeName",
+      "node",
+      "element",
+      "item",
+      "result",
+      "data",
+      "value",
+      "obj",
+      "arr",
+      "str",
+      "num",
+      "bool",
+      "fn",
+      "func",
+      "callback",
+      "arg",
+      "args",
+      "param",
+      "params",
+      "opt",
+      "opts",
+      "primitiveTypes",
+      "primitivetypes",
+      "builtInTypes",
+      "builtintypes",
+      "types",
+      "type",
     ]);
 
-    if (commonVariableNames.has(lowerTarget) || commonVariableNames.has(targetClass)) {
+    if (
+      commonVariableNames.has(lowerTarget) ||
+      commonVariableNames.has(targetClass)
+    ) {
       return true;
     }
 
@@ -768,7 +829,8 @@ export class SequenceAnalyzer {
     }
 
     // Fallback: try capitalizing the object name
-    const capitalized = objectName.charAt(0).toUpperCase() + objectName.slice(1);
+    const capitalized =
+      objectName.charAt(0).toUpperCase() + objectName.slice(1);
     if (this.classes.has(capitalized)) {
       return capitalized;
     }
@@ -793,27 +855,27 @@ export class SequenceAnalyzer {
       return node.value.toString();
     }
     if (t.isNullLiteral(node)) {
-      return 'null';
+      return "null";
     }
     if (t.isArrayExpression(node)) {
-      return '[...]';
+      return "[...]";
     }
     if (t.isObjectExpression(node)) {
-      return '{...}';
+      return "{...}";
     }
     if (t.isArrowFunctionExpression(node) || t.isFunctionExpression(node)) {
-      return '() => {}';
+      return "() => {}";
     }
     if (t.isCallExpression(node)) {
-      return 'fn()';
+      return "fn()";
     }
     if (t.isMemberExpression(node)) {
       if (t.isIdentifier(node.object) && t.isIdentifier(node.property)) {
         return `${node.object.name}.${node.property.name}`;
       }
-      return 'obj.prop';
+      return "obj.prop";
     }
-    return '...';
+    return "...";
   }
 
   /**
@@ -821,8 +883,8 @@ export class SequenceAnalyzer {
    */
   private addParticipant(
     name: string,
-    type: 'class' | 'function' | 'module',
-    lineNumber?: number
+    type: "class" | "function" | "module",
+    lineNumber?: number,
   ): void {
     if (!this.participants.has(name)) {
       this.participants.set(name, { name, type, lineNumber });
@@ -836,8 +898,8 @@ export class SequenceAnalyzer {
     from: string,
     to: string,
     message: string,
-    type: 'sync' | 'async' | 'return',
-    lineNumber?: number
+    type: "sync" | "async" | "return",
+    lineNumber?: number,
   ): void {
     this.interactions.push({
       from,

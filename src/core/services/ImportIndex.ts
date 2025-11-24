@@ -1,6 +1,6 @@
-import { IFileProvider, SupportedLanguage } from '../types/index.js';
-import { LanguageDetector } from '../parsers/common/index.js';
-import { ParserService } from './ParserService.js';
+import { LanguageDetector } from "../parsers/common/index.js";
+import { IFileProvider, SupportedLanguage } from "../types/index.js";
+import { ParserService } from "./ParserService.js";
 
 /**
  * Import index configuration
@@ -36,45 +36,45 @@ export interface ImportIndexOptions {
  */
 const DEFAULT_EXCLUDE_PATTERNS: Record<SupportedLanguage, string[]> = {
   typescript: [
-    '**/node_modules/**',
-    '**/dist/**',
-    '**/build/**',
-    '**/.next/**',
-    '**/out/**',
-    '**/*.min.js',
-    '**/*.bundle.js',
-    '**/.vscode/**',
-    '**/.git/**',
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.next/**",
+    "**/out/**",
+    "**/*.min.js",
+    "**/*.bundle.js",
+    "**/.vscode/**",
+    "**/.git/**",
   ],
   javascript: [
-    '**/node_modules/**',
-    '**/dist/**',
-    '**/build/**',
-    '**/.next/**',
-    '**/out/**',
-    '**/*.min.js',
-    '**/*.bundle.js',
-    '**/.vscode/**',
-    '**/.git/**',
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.next/**",
+    "**/out/**",
+    "**/*.min.js",
+    "**/*.bundle.js",
+    "**/.vscode/**",
+    "**/.git/**",
   ],
   java: [
-    '**/target/**',
-    '**/build/**',
-    '**/.gradle/**',
-    '**/.idea/**',
-    '**/*.class',
-    '**/.git/**',
+    "**/target/**",
+    "**/build/**",
+    "**/.gradle/**",
+    "**/.idea/**",
+    "**/*.class",
+    "**/.git/**",
   ],
   python: [
-    '**/__pycache__/**',
-    '**/*.pyc',
-    '**/.pytest_cache/**',
-    '**/venv/**',
-    '**/env/**',
-    '**/.venv/**',
-    '**/dist/**',
-    '**/build/**',
-    '**/.git/**',
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/.pytest_cache/**",
+    "**/venv/**",
+    "**/env/**",
+    "**/.venv/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.git/**",
   ],
 };
 
@@ -118,31 +118,32 @@ export class ImportIndex {
 
     // Determine file patterns
     const includePatterns = options.includePatterns || [
-      '**/*.{ts,tsx,js,jsx,java,py}',
+      "**/*.{ts,tsx,js,jsx,java,py}",
     ];
 
     // Get all candidate files
-    let allFiles: string[] = [];
+    const allFiles: string[] = [];
     for (const pattern of includePatterns) {
       const files = await this.fileProvider.listFiles(pattern);
       allFiles.push(...files);
     }
 
     // Apply exclude patterns
-    const excludePatterns = options.excludePatterns || this.getDefaultExcludePatterns();
+    const excludePatterns =
+      options.excludePatterns || this.getDefaultExcludePatterns();
     const filteredFiles = this.filterFiles(allFiles, excludePatterns);
 
     // Limit file count
     const maxFiles = options.maxFiles || 10000;
     if (filteredFiles.length > maxFiles) {
       console.warn(
-        `[ImportIndex] Found ${filteredFiles.length} files, limiting to ${maxFiles}`
+        `[ImportIndex] Found ${filteredFiles.length} files, limiting to ${maxFiles}`,
       );
       filteredFiles.splice(maxFiles);
     }
 
     console.log(
-      `[ImportIndex] Indexing ${filteredFiles.length} files (excluded ${allFiles.length - filteredFiles.length} files)...`
+      `[ImportIndex] Indexing ${filteredFiles.length} files (excluded ${allFiles.length - filteredFiles.length} files)...`,
     );
 
     // Build index
@@ -179,7 +180,7 @@ export class ImportIndex {
     const duration = this.builtAt - startTime;
 
     console.log(
-      `[ImportIndex] Built index in ${duration}ms: ${indexedFiles} files, ${indexedClasses} class mappings`
+      `[ImportIndex] Built index in ${duration}ms: ${indexedFiles} files, ${indexedClasses} class mappings`,
     );
   }
 
@@ -235,14 +236,14 @@ export class ImportIndex {
       const language = LanguageDetector.detectFromFilePath(filePath);
 
       // Parse and extract class names using simple regex for performance
-      if (language === 'typescript' || language === 'javascript') {
+      if (language === "typescript" || language === "javascript") {
         classNames.push(...this.extractTypeScriptClasses(code));
-      } else if (language === 'java') {
+      } else if (language === "java") {
         classNames.push(...this.extractJavaClasses(code));
-      } else if (language === 'python') {
+      } else if (language === "python") {
         classNames.push(...this.extractPythonClasses(code));
       }
-    } catch (error) {
+    } catch {
       // Return empty array on parse errors
       return [];
     }
@@ -337,28 +338,28 @@ export class ImportIndex {
     // Convert glob patterns to regex
     const regexPatterns = excludePatterns.map((pattern) => {
       const regexStr = pattern
-        .replace(/\\/g, '/')
+        .replace(/\\/g, "/")
         // Escape special regex characters except wildcards
-        .replace(/\./g, '\\.')
-        .replace(/\+/g, '\\+')
-        .replace(/\?/g, '\\?')
-        .replace(/\|/g, '\\|')
-        .replace(/\(/g, '\\(')
-        .replace(/\)/g, '\\)')
-        .replace(/\[/g, '\\[')
-        .replace(/\]/g, '\\]')
-        .replace(/\^/g, '\\^')
-        .replace(/\$/g, '\\$')
+        .replace(/\./g, "\\.")
+        .replace(/\+/g, "\\+")
+        .replace(/\?/g, "\\?")
+        .replace(/\|/g, "\\|")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)")
+        .replace(/\[/g, "\\[")
+        .replace(/\]/g, "\\]")
+        .replace(/\^/g, "\\^")
+        .replace(/\$/g, "\\$")
         // Convert wildcards to regex
-        .replace(/\*\*/g, '<<<DOUBLESTAR>>>')  // Temporary placeholder
-        .replace(/\*/g, '[^/]*')               // Single * = match within path segment
-        .replace(/<<<DOUBLESTAR>>>/g, '.*');   // ** = match across path segments
+        .replace(/\*\*/g, "<<<DOUBLESTAR>>>") // Temporary placeholder
+        .replace(/\*/g, "[^/]*") // Single * = match within path segment
+        .replace(/<<<DOUBLESTAR>>>/g, ".*"); // ** = match across path segments
 
       return new RegExp(regexStr);
     });
 
     return files.filter((file) => {
-      const normalizedPath = file.replace(/\\/g, '/');
+      const normalizedPath = file.replace(/\\/g, "/");
       return !regexPatterns.some((regex) => regex.test(normalizedPath));
     });
   }
@@ -370,7 +371,9 @@ export class ImportIndex {
     // Combine exclude patterns from all languages
     const allPatterns = new Set<string>();
 
-    for (const language of Object.keys(DEFAULT_EXCLUDE_PATTERNS) as SupportedLanguage[]) {
+    for (const language of Object.keys(
+      DEFAULT_EXCLUDE_PATTERNS,
+    ) as SupportedLanguage[]) {
       for (const pattern of DEFAULT_EXCLUDE_PATTERNS[language]) {
         allPatterns.add(pattern);
       }

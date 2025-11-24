@@ -11,7 +11,7 @@
 // ============================================================================
 // Provider Interfaces (Dependency Inversion)
 // ============================================================================
-export type { IFileProvider, ICacheProvider } from './providers.js';
+export type { IFileProvider, ICacheProvider } from "./providers.js";
 
 // ============================================================================
 // AST Types (Abstract Syntax Tree)
@@ -46,7 +46,7 @@ export type {
   ImportIndex,
   ImportIndexOptions,
   CrossFileDependencyGraph,
-} from './ast.js';
+} from "./ast.js";
 
 // ============================================================================
 // UML Types (Diagram Generation)
@@ -64,4 +64,4 @@ export type {
   // Results
   UMLResult,
   UMLDiagrams,
-} from './uml.js';
+} from "./uml.js";
