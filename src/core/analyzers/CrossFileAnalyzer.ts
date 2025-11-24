@@ -17,6 +17,7 @@ import type {
 } from '../types/index.js';
 import { LanguageDetector } from '../parsers/common/index.js';
 import { ParserService } from '../services/ParserService.js';
+import { ImportIndex } from '../services/ImportIndex.js';
 import { OOAnalyzer } from './OOAnalyzer.js';
 
 // Handle CommonJS/ESM compatibility for @babel/traverse
@@ -30,12 +31,16 @@ const traverse =
  * - Forward dependency analysis: Track which files this file imports
  * - Supports multi-level depth tracking (depth 1-3)
  * - Circular dependency detection
- * - AST caching for performance
+ * - Fast class resolution via ImportIndex (optional)
  *
  * Platform Integration:
  * - Uses IFileProvider for all file operations (platform-agnostic)
  * - Delegates import resolution to the provider
  * - No direct file system dependencies
+ *
+ * Performance Optimization:
+ * - Optional ImportIndex for fast class-to-file resolution (O(1) lookup)
+ * - Falls back to project-wide glob search if index not provided (O(N) scan)
  *
  * Note:
  * - Reverse dependency analysis (who imports this file) is handled by the adapter layer
@@ -45,23 +50,15 @@ export class CrossFileAnalyzer {
   private readonly ooAnalyzer: OOAnalyzer;
   private readonly parserService: ParserService;
 
-  // AST cache: filePath → { ast, analysis }
-  // Note: mtime validation removed - adapter layer can handle cache invalidation
-  private astCache: Map<
-    string,
-    {
-      ast: any;
-      analysis: FileAnalysisResult;
-    }
-  >;
-
   // Visited files (used to avoid circular dependencies)
   private visited: Set<string>;
 
-  constructor(private readonly fileProvider: IFileProvider) {
+  constructor(
+    private readonly fileProvider: IFileProvider,
+    private readonly importIndex?: ImportIndex
+  ) {
     this.ooAnalyzer = new OOAnalyzer();
     this.parserService = ParserService.getInstance();
-    this.astCache = new Map();
     this.visited = new Set();
   }
 
@@ -299,12 +296,12 @@ export class CrossFileAnalyzer {
 
   /**
    * Find class file by searching the project
-   * 
+   *
    * Search strategy:
-   * 1. Try same directory first (most common case)
-   * 2. For Python: check imports to find the source module
-   * 3. Search project-wide using glob patterns
-   * 4. For Python: parse all Python files to find class definition
+   * 1. Try same directory first (most common case - O(1))
+   * 2. Use ImportIndex if available (fast - O(1) lookup)
+   * 3. For Python: check imports to find the source module
+   * 4. Fallback: Search project-wide using glob patterns (slow - O(N))
    */
   private async findClassFile(
     currentFilePath: string,
@@ -319,7 +316,18 @@ export class CrossFileAnalyzer {
       return sameDirPath;
     }
 
-    // Strategy 2: For Python, use imports to find the source module
+    // Strategy 2: Use ImportIndex if available (O(1) lookup)
+    if (this.importIndex) {
+      const candidates = this.importIndex.resolve(className);
+      if (candidates.length > 0) {
+        // Return first candidate (prioritize by file path similarity if needed)
+        const resolvedPath = candidates[0];
+        console.debug(`[CrossFileAnalyzer] Resolved class via ImportIndex: ${className} -> ${resolvedPath}`);
+        return resolvedPath;
+      }
+    }
+
+    // Strategy 3: For Python, use imports to find the source module
     if (language === 'python') {
       const importBasedPath = await this.findPythonClassViaImports(currentFilePath, className);
       if (importBasedPath) {
@@ -328,7 +336,7 @@ export class CrossFileAnalyzer {
       }
     }
 
-    // Strategy 3: Search project-wide (slower but more thorough)
+    // Strategy 4: Fallback to project-wide search (slower but more thorough)
     const projectWidePath = await this.searchClassInProject(className, language);
     if (projectWidePath) {
       console.debug(`[CrossFileAnalyzer] Resolved class via project search: ${className} -> ${projectWidePath}`);
@@ -341,26 +349,16 @@ export class CrossFileAnalyzer {
   /**
    * Find Python class file by checking imports
    * For example, if we have "from .layer_2 import Service", resolve .layer_2 to find Service
+   *
+   * Note: This method previously relied on cache. With cache removed, Python import resolution
+   * is temporarily disabled until a better solution is implemented (e.g., using ImportIndex).
    */
   private async findPythonClassViaImports(
     currentFilePath: string,
     className: string
   ): Promise<string | null> {
-    // Get the analysis result (should be cached)
-    const cached = this.getCachedAnalysis(currentFilePath);
-    if (!cached) return null;
-
-    // Look for imports that import this class
-    for (const importInfo of cached.imports) {
-      if (importInfo.specifiers.includes(className)) {
-        // Found an import for this class, try to resolve the source module
-        const resolvedPath = await this.fileProvider.resolveImport(currentFilePath, importInfo.source);
-        if (resolvedPath) {
-          return resolvedPath;
-        }
-      }
-    }
-
+    // TODO: Re-implement Python import resolution without cache
+    // Possible solution: Pass FileAnalysisResult as parameter instead of relying on cache
     return null;
   }
 
@@ -514,12 +512,6 @@ export class CrossFileAnalyzer {
    * Analyze single file
    */
   private async analyzeFile(filePath: string, depth: number): Promise<FileAnalysisResult> {
-    // Check cache
-    const cached = this.getCachedAnalysis(filePath);
-    if (cached) {
-      return { ...cached, depth }; // Update depth
-    }
-
     // Read file content
     const code = await this.fileProvider.readFile(filePath);
 
@@ -593,49 +585,7 @@ export class CrossFileAnalyzer {
       relationships: ooAnalysis.relationships,
     };
 
-    // Cache result
-    this.cacheAnalysis(filePath, ast, analysis);
-
     return analysis;
-  }
-
-  /**
-   * Get analysis result from cache
-   *
-   * Note: mtime validation removed - adapter layer can handle cache invalidation
-   */
-  private getCachedAnalysis(filePath: string): FileAnalysisResult | null {
-    const cached = this.astCache.get(filePath);
-    if (!cached) {
-      return null;
-    }
-
-    return cached.analysis;
-  }
-
-  /**
-   * Cache analysis result
-   */
-  private cacheAnalysis(filePath: string, ast: any, analysis: FileAnalysisResult): void {
-    this.astCache.set(filePath, {
-      ast,
-      analysis,
-    });
-  }
-
-  /**
-   * Get all analyzed files list
-   */
-  getAnalyzedFiles(): string[] {
-    return Array.from(this.astCache.keys());
-  }
-
-  /**
-   * Clear cache
-   */
-  clearCache(): void {
-    this.astCache.clear();
-    this.visited.clear();
   }
 
   /**
