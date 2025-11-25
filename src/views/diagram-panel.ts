@@ -604,23 +604,23 @@ export class DiagramPanel {
 
     <!-- Diagram Display -->
     <div class="diagram-container" id="diagramContainer">
-        ${
-          this._mermaidCode
-            ? `<div class="mermaid">${this._mermaidCode}</div>`
-            : this._currentFile
+      ${
+        this._mermaidCode
+          ? `<div class="mermaid">${this._mermaidCode}</div>`
+          : this._currentFile
             ? `
-        <div class="loading">
-            <div class="spinner"></div>
-            <p>Generating ${this._currentType} diagram...</p>
-        </div>
-        `
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Generating ${this._currentType} diagram...</p>
+      </div>
+      `
             : `
-        <div class="empty-state">
-            <div class="empty-state-icon">📊</div>
-            <p>Select a supported file (TypeScript, JavaScript, Java, or Python) and click Refresh to generate a UML diagram</p>
-        </div>
-        `
-        }
+      <div class="empty-state">
+        <div class="empty-state-icon">📊</div>
+        <p>Select a supported file (TypeScript, JavaScript, Java, or Python) and click Refresh to generate a UML diagram</p>
+      </div>
+      `
+      }
     </div>
 
     <script type="module" nonce="${nonce}">

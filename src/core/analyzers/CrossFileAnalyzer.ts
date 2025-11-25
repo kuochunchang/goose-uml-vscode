@@ -243,9 +243,7 @@ export class CrossFileAnalyzer {
    * Find files that import the target file
    * Scans project files to find which files import classes/exports from the target file
    */
-  private async findFilesThatImport(
-    targetFilePath: string,
-  ): Promise<string[]> {
+  private async findFilesThatImport(targetFilePath: string): Promise<string[]> {
     const importers: string[] = [];
 
     try {
@@ -267,7 +265,10 @@ export class CrossFileAnalyzer {
 
       if (exportedNames.size === 0) {
         // If no exports found, use filename as fallback
-        const fileName = path.basename(targetFilePath, path.extname(targetFilePath));
+        const fileName = path.basename(
+          targetFilePath,
+          path.extname(targetFilePath),
+        );
         exportedNames.add(fileName);
       }
 
@@ -289,8 +290,13 @@ export class CrossFileAnalyzer {
         for (const searchDir of searchDirs) {
           try {
             // Construct pattern relative to search directory
-            const relativePattern = path.join(searchDir, "**", path.basename(pattern));
-            const candidateFiles = await this.fileProvider.listFiles(relativePattern);
+            const relativePattern = path.join(
+              searchDir,
+              "**",
+              path.basename(pattern),
+            );
+            const candidateFiles =
+              await this.fileProvider.listFiles(relativePattern);
             for (const candidateFile of candidateFiles) {
               // Skip the target file itself
               if (candidateFile === targetFilePath) {
@@ -387,13 +393,17 @@ export class CrossFileAnalyzer {
         targetFilePath,
         path.extname(targetFilePath),
       );
-      const targetDir = path.dirname(targetFilePath);
 
       if (language === "typescript" || language === "javascript") {
         // Parse and check imports
         const ast = parse(code, {
           sourceType: "module",
-          plugins: ["typescript", "jsx", "decorators-legacy", "classProperties"],
+          plugins: [
+            "typescript",
+            "jsx",
+            "decorators-legacy",
+            "classProperties",
+          ],
         });
 
         const imports = this.ooAnalyzer.extractImports(ast);
@@ -520,8 +530,7 @@ export class CrossFileAnalyzer {
         const existingResult = allResults.get(path)!;
         const existingRelKeys = new Set(
           existingResult.relationships.map(
-            (rel) =>
-              `${rel.from}:${rel.to}:${rel.type}:${rel.context || ""}`,
+            (rel) => `${rel.from}:${rel.to}:${rel.type}:${rel.context || ""}`,
           ),
         );
         // Add new relationships that don't already exist
