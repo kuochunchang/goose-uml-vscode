@@ -143,22 +143,22 @@ npm run test:e2e -- --project=chromium # Run only on Chromium browser
 E2E tests should follow this structure:
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Feature Name', () => {
+test.describe("Feature Name", () => {
   test.beforeEach(async ({ page }) => {
     // Setup: Navigate to the page, set up test data
-    await page.goto('http://localhost:3000');
+    await page.goto("http://localhost:3000");
   });
 
-  test('should do something', async ({ page }) => {
+  test("should do something", async ({ page }) => {
     // Arrange: Set up test conditions
 
     // Act: Perform user actions
-    await page.click('button#submit');
+    await page.click("button#submit");
 
     // Assert: Verify expected outcomes
-    await expect(page.locator('.result')).toBeVisible();
+    await expect(page.locator(".result")).toBeVisible();
   });
 
   test.afterEach(async ({ page }) => {

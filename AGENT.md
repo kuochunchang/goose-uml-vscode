@@ -78,6 +78,7 @@ npm run package             # Package extension as .vsix
 ```
 
 To test the extension:
+
 1. Press F5 in VS Code to launch Extension Development Host
 2. Or run `npm run watch` and reload the extension window
 
@@ -147,6 +148,7 @@ Must build in this specific order due to dependencies:
 1. `npm run build` (builds all packages in correct order using TypeScript project references)
 
 Or build specific packages:
+
 ```bash
 npm run build:packages  # Build core packages only
 cd packages/vscode-extension && npm run build  # Build extension
@@ -157,6 +159,7 @@ cd packages/vscode-extension && npm run build  # Build extension
 **Published Packages**:
 
 **Core Library Packages** (npm):
+
 1. `@code-review-goose/analysis-types` - Type definitions
 2. `@code-review-goose/analysis-utils` - Shared utilities
 3. `@code-review-goose/analysis-core` - Analysis engine
@@ -169,6 +172,7 @@ cd packages/vscode-extension && npm run build  # Build extension
 10. `@code-review-goose/git-analyzer` - Git analysis and SonarQube integration
 
 **VS Code Extension** (VS Code Marketplace):
+
 - `goose-code-review-vscode` - Published to VS Code Marketplace
 
 **Version Management**:
