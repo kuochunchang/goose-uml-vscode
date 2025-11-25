@@ -79,7 +79,7 @@ export class UMLAnalyzer {
    * @param filePath - Target file path to analyze (relative to project root)
    * @param type - Diagram type: 'class', 'flowchart', 'sequence', or 'dependency'
    * @param options - Generation options
-   * @param options.depth - Analysis depth: 0 = single file only, 1-3 = cross-file analysis (default: 0)
+   * @param options.depth - Analysis depth: 0 = single file only, 1-10 = cross-file analysis (default: 0)
    * @param options.mode - Analysis mode for cross-file: 'bidirectional', 'forward', or 'reverse' (default: 'bidirectional')
    * @param options.aiMode - AI generation mode override (uses config if not specified)
    * @returns UML diagram with consistent metadata structure
@@ -98,9 +98,9 @@ export class UMLAnalyzer {
 
     try {
       // Validate depth parameter
-      if (depth < 0 || depth > 3) {
+      if (depth < 0 || depth > 10) {
         throw new Error(
-          "Depth must be between 0 (single file) and 3 (cross-file)",
+          "Depth must be between 0 (single file) and 10 (cross-file)",
         );
       }
 
@@ -113,7 +113,7 @@ export class UMLAnalyzer {
           // Cross-file class diagram
           return await this.generateCrossFileClassDiagram(
             filePath,
-            depth as 1 | 2 | 3,
+            depth as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
             mode,
           );
         }
@@ -128,7 +128,7 @@ export class UMLAnalyzer {
           // Cross-file sequence diagram
           return await this.generateCrossFileSequenceDiagram(
             filePath,
-            depth as 1 | 2 | 3,
+            depth as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
             mode,
           );
         }
@@ -196,18 +196,18 @@ export class UMLAnalyzer {
    * Generate cross-file class diagram with specified analysis mode
    *
    * @param filePath - Target file path to analyze
-   * @param depth - Maximum traversal depth (1-3)
+   * @param depth - Maximum traversal depth (1-10)
    * @param mode - Analysis mode: 'forward', 'reverse', or 'bidirectional'
    * @returns UML class diagram with cross-file relationships
    */
   async generateCrossFileClassDiagram(
     filePath: string,
-    depth: 1 | 2 | 3 = 1,
+    depth: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 = 1,
     mode: "forward" | "reverse" | "bidirectional" = "bidirectional",
   ): Promise<UMLResult> {
     // Validate depth parameter
-    if (depth < 1 || depth > 3) {
-      throw new Error("Cross-file analysis depth must be between 1 and 3");
+    if (depth < 1 || depth > 10) {
+      throw new Error("Cross-file analysis depth must be between 1 and 10");
     }
 
     // Create CrossFileAnalyzer instance
@@ -256,12 +256,12 @@ export class UMLAnalyzer {
    */
   async generateCrossFileSequenceDiagram(
     filePath: string,
-    depth: 1 | 2 | 3 = 1,
+    depth: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 = 1,
     mode: "forward" | "reverse" | "bidirectional" = "bidirectional",
   ): Promise<UMLResult> {
     // Validate depth parameter
-    if (depth < 1 || depth > 3) {
-      throw new Error("Cross-file analysis depth must be between 1 and 3");
+    if (depth < 1 || depth > 10) {
+      throw new Error("Cross-file analysis depth must be between 1 and 10");
     }
 
     // Create CrossFileAnalyzer instance to get related files

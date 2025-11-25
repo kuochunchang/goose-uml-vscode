@@ -31,7 +31,7 @@ const traverse =
  *
  * Responsibilities:
  * - Forward dependency analysis: Track which files this file imports
- * - Supports multi-level depth tracking (depth 1-3)
+ * - Supports multi-level depth tracking (depth 1-10)
  * - Circular dependency detection
  * - Fast class resolution via ImportIndex (optional)
  *
@@ -68,16 +68,16 @@ export class CrossFileAnalyzer {
    * Analyze forward dependencies
    *
    * @param filePath - File path to analyze
-   * @param maxDepth - Maximum tracking depth (1-3)
+   * @param maxDepth - Maximum tracking depth (1-10)
    * @returns Map<filePath, FileAnalysisResult> - All analyzed files
    */
   async analyzeForward(
     filePath: string,
-    maxDepth: 1 | 2 | 3,
+    maxDepth: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
   ): Promise<Map<string, FileAnalysisResult>> {
     // Validate depth parameter
-    if (maxDepth < 1 || maxDepth > 3) {
-      throw new Error("Depth must be between 1 and 3");
+    if (maxDepth < 1 || maxDepth > 10) {
+      throw new Error("Depth must be between 1 and 10");
     }
 
     // Verify file exists
@@ -119,16 +119,16 @@ export class CrossFileAnalyzer {
    * implemented in the adapter layer.
    *
    * @param filePath - File path to analyze
-   * @param maxDepth - Maximum tracking depth (1-3)
+   * @param maxDepth - Maximum tracking depth (1-10)
    * @returns BidirectionalAnalysisResult - Contains forward, reverse dependencies and statistics
    */
   async analyzeBidirectional(
     filePath: string,
-    maxDepth: 1 | 2 | 3,
+    maxDepth: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
   ): Promise<BidirectionalAnalysisResult> {
     // Validate depth parameter
-    if (maxDepth < 1 || maxDepth > 3) {
-      throw new Error("Depth must be between 1 and 3");
+    if (maxDepth < 1 || maxDepth > 10) {
+      throw new Error("Depth must be between 1 and 10");
     }
 
     // Verify file exists
