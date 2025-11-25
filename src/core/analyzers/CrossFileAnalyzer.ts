@@ -1,6 +1,3 @@
-import { parse } from "@babel/parser";
-import traverseDefault from "@babel/traverse";
-import * as t from "@babel/types";
 import * as path from "path";
 import { LanguageDetector } from "../parsers/common/index.js";
 import { ImportIndex } from "../services/ImportIndex.js";
@@ -13,18 +10,9 @@ import type {
   FileAnalysisResult,
   IFileProvider,
   ImportInfo,
-  MethodInfo,
-  ParameterInfo,
-  PropertyInfo,
   UnifiedAST,
 } from "../types/index.js";
 import { OOAnalyzer } from "./OOAnalyzer.js";
-
-// Handle CommonJS/ESM compatibility for @babel/traverse
-const traverse =
-  typeof traverseDefault === "function"
-    ? traverseDefault
-    : (traverseDefault as any).default;
 
 /**
  * CrossFileAnalyzer - Platform-agnostic cross-file dependency analyzer
@@ -423,48 +411,8 @@ export class CrossFileAnalyzer {
         path.extname(targetFilePath),
       );
 
-      if (language === "typescript" || language === "javascript") {
-        // Parse and check imports
-        const ast = parse(code, {
-          sourceType: "module",
-          plugins: [
-            "typescript",
-            "jsx",
-            "decorators-legacy",
-            "classProperties",
-          ],
-        });
-
-        const imports = this.ooAnalyzer.extractImports(ast);
-        for (const imp of imports) {
-          // Check if any imported specifier matches
-          for (const specifier of imp.specifiers) {
-            if (names.has(specifier)) {
-              return true;
-            }
-          }
-          // Check if import source/path matches target file
-          if (imp.source) {
-            // Check if import source contains the target file name
-            if (imp.source.includes(targetFileName)) {
-              return true;
-            }
-            // Try to resolve import source and check if it matches target file
-            try {
-              const resolvedPath = await this.fileProvider.resolveImport(
-                filePath,
-                imp.source,
-              );
-              if (resolvedPath === targetFilePath) {
-                return true;
-              }
-            } catch {
-              // Ignore resolution errors
-            }
-          }
-        }
-      } else if (language && this.parserService.canParse(filePath)) {
-        // Use unified parser for other languages
+      if (language && this.parserService.canParse(filePath)) {
+        // Use unified parser for all languages
         const ast = await this.parserService.parse(code, filePath);
         const unifiedAST = ast as UnifiedAST;
         for (const imp of unifiedAST.imports) {
@@ -474,7 +422,7 @@ export class CrossFileAnalyzer {
               return true;
             }
           }
-          // Check import source for other languages
+          // Check import source
           if (imp.source) {
             if (imp.source.includes(targetFileName)) {
               return true;
@@ -796,13 +744,13 @@ export class CrossFileAnalyzer {
    * Note: This method previously relied on cache. With cache removed, Python import resolution
    * is temporarily disabled until a better solution is implemented (e.g., using ImportIndex).
    */
-  private async findPythonClassViaImports(
+  private findPythonClassViaImports(
     _currentFilePath: string,
     _className: string,
   ): Promise<string | null> {
     // TODO: Re-implement Python import resolution without cache
     // Possible solution: Pass FileAnalysisResult as parameter instead of relying on cache
-    return null;
+    return Promise.resolve(null);
   }
 
   /**
@@ -971,44 +919,13 @@ export class CrossFileAnalyzer {
 
     // Parse AST (supports multiple languages)
     const language = LanguageDetector.detectFromFilePath(filePath);
-    let ast: UnifiedAST | t.File;
     let imports: ImportInfo[] = [];
     let exports: ExportInfo[] = [];
     let classes: ClassInfo[] = [];
 
-    if (language === "typescript" || language === "javascript") {
-      // Use Babel parser for TypeScript/JavaScript (backward compatible)
-      ast = parse(code, {
-        sourceType: "module",
-        plugins: ["typescript", "jsx", "decorators-legacy", "classProperties"],
-      });
-
-      // Extract imports
-      imports = this.ooAnalyzer.extractImports(ast);
-
-      // Extract exports
-      exports = this.ooAnalyzer.extractExports(ast);
-
-      // Extract classes (using traverse)
-      traverse(ast, {
-        ClassDeclaration: (path: any) => {
-          const node = path.node;
-          const classInfo = this.extractClassInfo(node);
-          if (classInfo) {
-            classes.push(classInfo);
-          }
-        },
-        TSInterfaceDeclaration: (path: any) => {
-          const node = path.node;
-          const interfaceInfo = this.extractInterfaceInfo(node);
-          if (interfaceInfo) {
-            classes.push(interfaceInfo);
-          }
-        },
-      });
-    } else if (language && this.parserService.canParse(filePath)) {
-      // Use unified parser for other languages (Java, Python)
-      ast = await this.parserService.parse(code, filePath);
+    if (language && this.parserService.canParse(filePath)) {
+      // Use unified parser for all languages (TypeScript, JavaScript, Java, Python)
+      const ast = await this.parserService.parse(code, filePath);
       const unifiedAST = ast as UnifiedAST;
       classes = [...unifiedAST.classes];
       // Convert interfaces to ClassInfo format
@@ -1046,288 +963,5 @@ export class CrossFileAnalyzer {
     };
 
     return analysis;
-  }
-
-  /**
-   * Extract class information from AST node
-   */
-  private extractClassInfo(node: t.ClassDeclaration): ClassInfo | null {
-    if (!node.id) {
-      return null;
-    }
-
-    const className = node.id.name;
-    const properties: PropertyInfo[] = [];
-    const methods: MethodInfo[] = [];
-    let constructorParams: ParameterInfo[] = [];
-
-    // Extract superClass (extends)
-    const extendsClass =
-      node.superClass && t.isIdentifier(node.superClass)
-        ? node.superClass.name
-        : undefined;
-
-    // Extract implements
-    const implementsInterfaces: string[] = [];
-    if (node.implements) {
-      node.implements.forEach((impl: any) => {
-        if (
-          t.isTSExpressionWithTypeArguments(impl) &&
-          t.isIdentifier(impl.expression)
-        ) {
-          implementsInterfaces.push(impl.expression.name);
-        }
-      });
-    }
-
-    // Extract properties and methods
-    node.body.body.forEach((member: any) => {
-      if (t.isClassProperty(member) && t.isIdentifier(member.key)) {
-        const propInfo = this.extractPropertyInfo(member);
-        if (propInfo) {
-          properties.push(propInfo);
-        }
-      } else if (t.isClassMethod(member) && t.isIdentifier(member.key)) {
-        if (member.kind === "constructor") {
-          // Extract constructor parameters
-          constructorParams = member.params.map((param: any) =>
-            this.extractParameterInfo(param),
-          );
-        } else {
-          const methodInfo = this.extractMethodInfo(member);
-          if (methodInfo) {
-            methods.push(methodInfo);
-          }
-        }
-      }
-    });
-
-    return {
-      name: className,
-      type: "class",
-      properties,
-      methods,
-      extends: extendsClass,
-      implements:
-        implementsInterfaces.length > 0 ? implementsInterfaces : undefined,
-      isAbstract: node.abstract ?? undefined,
-      constructorParams:
-        constructorParams.length > 0 ? constructorParams : undefined,
-    };
-  }
-
-  /**
-   * Extract interface information from AST node
-   */
-  private extractInterfaceInfo(
-    node: t.TSInterfaceDeclaration,
-  ): ClassInfo | null {
-    const interfaceName = node.id.name;
-    const properties: PropertyInfo[] = [];
-    const methods: MethodInfo[] = [];
-
-    // Extract extends
-    const extendsInterfaces: string[] = [];
-    if (node.extends) {
-      node.extends.forEach((ext: any) => {
-        if (t.isIdentifier(ext.expression)) {
-          extendsInterfaces.push(ext.expression.name);
-        }
-      });
-    }
-
-    // Extract properties and methods
-    node.body.body.forEach((member: any) => {
-      if (t.isTSPropertySignature(member) && t.isIdentifier(member.key)) {
-        const propInfo = this.extractPropertySignatureInfo(member);
-        if (propInfo) {
-          properties.push(propInfo);
-        }
-      } else if (t.isTSMethodSignature(member) && t.isIdentifier(member.key)) {
-        const methodInfo = this.extractMethodSignatureInfo(member);
-        if (methodInfo) {
-          methods.push(methodInfo);
-        }
-      }
-    });
-
-    return {
-      name: interfaceName,
-      type: "interface",
-      properties,
-      methods,
-      implements: extendsInterfaces.length > 0 ? extendsInterfaces : undefined,
-    };
-  }
-
-  /**
-   * Extract property information
-   */
-  private extractPropertyInfo(member: any): PropertyInfo | null {
-    if (!t.isIdentifier(member.key)) {
-      return null;
-    }
-
-    const name = member.key.name;
-    const visibility = this.getVisibility(member);
-    const type = member.typeAnnotation
-      ? this.getTypeString(member.typeAnnotation.typeAnnotation)
-      : undefined;
-
-    return {
-      name,
-      type,
-      visibility,
-      isStatic: member.static,
-      isReadonly: member.readonly,
-    };
-  }
-
-  /**
-   * Extract property signature information (interface)
-   */
-  private extractPropertySignatureInfo(member: any): PropertyInfo | null {
-    if (!t.isIdentifier(member.key)) {
-      return null;
-    }
-
-    const name = member.key.name;
-    const type = member.typeAnnotation
-      ? this.getTypeString(member.typeAnnotation.typeAnnotation)
-      : undefined;
-
-    return {
-      name,
-      type,
-      visibility: "public",
-      isOptional: member.optional,
-    };
-  }
-
-  /**
-   * Extract method information
-   */
-  private extractMethodInfo(member: any): MethodInfo | null {
-    if (!t.isIdentifier(member.key)) {
-      return null;
-    }
-
-    const name = member.key.name;
-    const visibility = this.getVisibility(member);
-    const parameters = member.params.map((param: any) =>
-      this.extractParameterInfo(param),
-    );
-    const returnType = member.returnType
-      ? this.getTypeString(member.returnType.typeAnnotation)
-      : undefined;
-
-    return {
-      name,
-      parameters,
-      returnType,
-      visibility,
-      isStatic: member.static,
-      isAbstract: member.abstract,
-      isAsync: member.async,
-    };
-  }
-
-  /**
-   * Extract method signature information (interface)
-   */
-  private extractMethodSignatureInfo(member: any): MethodInfo | null {
-    if (!t.isIdentifier(member.key)) {
-      return null;
-    }
-
-    const name = member.key.name;
-    const parameters = member.parameters.map((param: any) =>
-      this.extractParameterInfo(param),
-    );
-    const returnType = member.typeAnnotation
-      ? this.getTypeString(member.typeAnnotation.typeAnnotation)
-      : undefined;
-
-    return {
-      name,
-      parameters,
-      returnType,
-      visibility: "public",
-    };
-  }
-
-  /**
-   * Extract parameter information
-   */
-  private extractParameterInfo(param: any): ParameterInfo {
-    let name = "unknown";
-    let type: string | undefined;
-    let isOptional = false;
-
-    if (t.isIdentifier(param)) {
-      name = param.name;
-      type =
-        param.typeAnnotation && "typeAnnotation" in param.typeAnnotation
-          ? this.getTypeString((param.typeAnnotation as any).typeAnnotation)
-          : undefined;
-      isOptional = param.optional ?? false;
-    } else if (t.isAssignmentPattern(param) && t.isIdentifier(param.left)) {
-      name = param.left.name;
-      type =
-        param.left.typeAnnotation &&
-        "typeAnnotation" in param.left.typeAnnotation
-          ? this.getTypeString(
-              (param.left.typeAnnotation as any).typeAnnotation,
-            )
-          : undefined;
-      isOptional = true;
-    }
-
-    return {
-      name,
-      type,
-      isOptional,
-    };
-  }
-
-  /**
-   * Get visibility modifier
-   */
-  private getVisibility(member: any): "public" | "private" | "protected" {
-    if (member.accessibility) {
-      return member.accessibility as "public" | "private" | "protected";
-    }
-    return "public";
-  }
-
-  /**
-   * Get type string
-   */
-  private getTypeString(typeAnnotation: any): string {
-    if (t.isTSStringKeyword(typeAnnotation)) {
-      return "string";
-    }
-    if (t.isTSNumberKeyword(typeAnnotation)) {
-      return "number";
-    }
-    if (t.isTSBooleanKeyword(typeAnnotation)) {
-      return "boolean";
-    }
-    if (t.isTSVoidKeyword(typeAnnotation)) {
-      return "void";
-    }
-    if (t.isTSAnyKeyword(typeAnnotation)) {
-      return "any";
-    }
-    if (
-      t.isTSTypeReference(typeAnnotation) &&
-      t.isIdentifier(typeAnnotation.typeName)
-    ) {
-      return typeAnnotation.typeName.name;
-    }
-    if (t.isTSArrayType(typeAnnotation)) {
-      return this.getTypeString(typeAnnotation.elementType) + "[]";
-    }
-    return "unknown";
   }
 }

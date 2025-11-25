@@ -2,12 +2,16 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { CrossFileAnalyzer } from "./CrossFileAnalyzer.js";
 import { InMemoryFileProvider } from "../__tests__/helpers/InMemoryFileProvider.js";
 import { TS_FIXTURES } from "../__tests__/fixtures/typescript-fixtures.js";
+import { registerTestParsers } from "../__tests__/helpers/registerParsers.js";
 
 describe("CrossFileAnalyzer", () => {
   let fileProvider: InMemoryFileProvider;
   let analyzer: CrossFileAnalyzer;
 
   beforeEach(() => {
+    // Register parsers for testing
+    registerTestParsers();
+
     fileProvider = new InMemoryFileProvider();
     analyzer = new CrossFileAnalyzer(fileProvider);
   });
@@ -17,11 +21,11 @@ describe("CrossFileAnalyzer", () => {
       fileProvider.addFile("/src/User.ts", TS_FIXTURES.simpleClass);
 
       await expect(
-        analyzer.analyzeForward("/src/User.ts", 0 as any),
+        analyzer.analyzeForward("/src/User.ts", 0 as unknown as number),
       ).rejects.toThrow("Depth must be between 1 and 10");
 
       await expect(
-        analyzer.analyzeForward("/src/User.ts", 11 as any),
+        analyzer.analyzeForward("/src/User.ts", 11 as unknown as number),
       ).rejects.toThrow("Depth must be between 1 and 10");
     });
 
@@ -341,7 +345,7 @@ export class Logger {
       expect(analysis?.classes[0].name).toBe("Logger");
     });
 
-    it("should throw error for unsupported file types", async () => {
+    it("should handle Java files", async () => {
       const javaCode = `
 package com.example;
 
@@ -356,13 +360,15 @@ public class User {
 
       fileProvider.addFile("/src/User.java", javaCode);
 
-      // Java requires ParserService initialization which is not available in unit tests
-      await expect(
-        analyzer.analyzeForward("/src/User.java", 1),
-      ).rejects.toThrow("Unsupported file type");
+      const results = await analyzer.analyzeForward("/src/User.java", 1);
+
+      expect(results.has("/src/User.java")).toBe(true);
+      const analysis = results.get("/src/User.java");
+      expect(analysis?.classes).toHaveLength(1);
+      expect(analysis?.classes[0].name).toBe("User");
     });
 
-    it("should throw error for Python files without parser", async () => {
+    it("should handle Python files", async () => {
       const pythonCode = `
 class User:
     def __init__(self, name):
@@ -374,10 +380,12 @@ class User:
 
       fileProvider.addFile("/src/user.py", pythonCode);
 
-      // Python requires ParserService initialization which is not available in unit tests
-      await expect(analyzer.analyzeForward("/src/user.py", 1)).rejects.toThrow(
-        "Unsupported file type",
-      );
+      const results = await analyzer.analyzeForward("/src/user.py", 1);
+
+      expect(results.has("/src/user.py")).toBe(true);
+      const analysis = results.get("/src/user.py");
+      expect(analysis?.classes).toHaveLength(1);
+      expect(analysis?.classes[0].name).toBe("User");
     });
   });
 

@@ -12,7 +12,7 @@ import type {
 /**
  * UML diagram type (supported diagram types)
  */
-export type DiagramType = "class" | "sequence";
+export type DiagramType = "class" | "sequence" | "activity";
 
 /**
  * UML generation mode

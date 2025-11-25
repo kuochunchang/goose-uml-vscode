@@ -2,12 +2,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { CrossFileAnalyzer } from "../../analyzers/CrossFileAnalyzer.js";
 import { ImportIndex } from "../../services/ImportIndex.js";
 import { InMemoryFileProvider } from "../helpers/InMemoryFileProvider.js";
+import { registerTestParsers } from "../helpers/registerParsers.js";
 
 describe("ImportIndex + CrossFileAnalyzer Integration", () => {
   let fileProvider: InMemoryFileProvider;
   let importIndex: ImportIndex;
 
   beforeEach(() => {
+    // Register parsers for testing
+    registerTestParsers();
+
     fileProvider = new InMemoryFileProvider();
     importIndex = new ImportIndex(fileProvider);
   });
