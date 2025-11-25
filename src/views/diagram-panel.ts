@@ -169,13 +169,13 @@ export class DiagramPanel {
       const generateOptions =
         this._currentType === "class" || this._currentType === "sequence"
           ? {
-            depth: this._currentOptions.depth,
-            mode: this._currentOptions.mode,
-          }
+              depth: this._currentOptions.depth,
+              mode: this._currentOptions.mode,
+            }
           : {
-            depth: 0, // Default depth for other types if needed, or handle specific types
-            mode: this._currentOptions.mode,
-          };
+              depth: 0, // Default depth for other types if needed, or handle specific types
+              mode: this._currentOptions.mode,
+            };
 
       let result;
       let fallbackUsed = false;
@@ -196,9 +196,10 @@ export class DiagramPanel {
           );
 
           vscode.window.showWarningMessage(
-            `Cross-file analysis failed. Showing single-file diagram instead. Error: ${crossFileError instanceof Error
-              ? crossFileError.message
-              : String(crossFileError)
+            `Cross-file analysis failed. Showing single-file diagram instead. Error: ${
+              crossFileError instanceof Error
+                ? crossFileError.message
+                : String(crossFileError)
             }`,
           );
 
@@ -606,16 +607,17 @@ export class DiagramPanel {
 
     <!-- Diagram Display -->
     <div class="diagram-container" id="diagramContainer">
-      ${this._mermaidCode
-        ? `<div class="mermaid">${this._mermaidCode}</div>`
-        : this._currentFile
-          ? `
+      ${
+        this._mermaidCode
+          ? `<div class="mermaid">${this._mermaidCode}</div>`
+          : this._currentFile
+            ? `
       <div class="loading">
         <div class="spinner"></div>
         <p>Generating ${this._currentType} diagram...</p>
       </div>
       `
-          : `
+            : `
       <div class="empty-state">
         <div class="empty-state-icon">📊</div>
         <p>Select a supported file (TypeScript, JavaScript, Java, or Python) and click Refresh to generate a UML diagram</p>
