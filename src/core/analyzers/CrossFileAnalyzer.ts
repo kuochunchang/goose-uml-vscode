@@ -185,7 +185,10 @@ export class CrossFileAnalyzer {
       this.visited.add(importerPath);
 
       // Analyze the importer file
-      const importerAnalysis = await this.analyzeFile(importerPath, currentDepth);
+      const importerAnalysis = await this.analyzeFile(
+        importerPath,
+        currentDepth,
+      );
       results.set(importerPath, importerAnalysis);
 
       // Get target file's exported classes
