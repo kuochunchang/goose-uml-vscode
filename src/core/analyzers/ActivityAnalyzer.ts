@@ -296,7 +296,7 @@ export class ActivityAnalyzer {
     this.mermaidCode += `    ${previousNodeId} ${incomingLink} ${conditionId}\n`;
 
     const mergeNodeId = this.getNextId();
-    this.mermaidCode += `    ${mergeNodeId}{}\n`; // Merge node (diamond)
+    this.mermaidCode += `    ${mergeNodeId}("Merge")\n`; // Merge node (rounded rectangle)
 
     // True branch
     if (consequenceNode) {
@@ -362,7 +362,7 @@ export class ActivityAnalyzer {
 
     // Exit loop
     const exitNodeId = this.getNextId();
-    this.mermaidCode += `    ${exitNodeId}{}\n`; // Merge node
+    this.mermaidCode += `    ${exitNodeId}("Exit")\n`; // Exit node (rounded rectangle)
     this.mermaidCode += `    ${conditionId} -- Done --> ${exitNodeId}\n`;
 
     return exitNodeId;
@@ -389,7 +389,7 @@ export class ActivityAnalyzer {
     }
 
     const exitNodeId = this.getNextId();
-    this.mermaidCode += `    ${exitNodeId}{}\n`;
+    this.mermaidCode += `    ${exitNodeId}("Exit")\n`; // Exit node (rounded rectangle)
     this.mermaidCode += `    ${conditionId} -- Done --> ${exitNodeId}\n`;
 
     return exitNodeId;
