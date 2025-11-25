@@ -1,22 +1,23 @@
+import { LanguageDetector } from "../parsers/common/index.js";
+import { ParserService } from "../services/ParserService.js";
 import type {
-  IFileProvider,
-  DiagramType,
-  DiagramGenerationMode,
-  UMLResult,
-  SequenceInfo,
   DependencyInfo as ASTDependencyInfo,
-  ClassInfo,
-  UnifiedAST,
-  ImportInfo,
-  FileAnalysisResult,
   BidirectionalAnalysisResult,
+  ClassInfo,
+  DiagramGenerationMode,
+  DiagramType,
+  FileAnalysisResult,
+  IFileProvider,
+  ImportInfo,
+  SequenceInfo,
+  UMLResult,
+  UnifiedAST,
 } from "../types/index.js";
 import { MermaidValidator } from "../utils/mermaidValidator.js";
-import { LanguageDetector } from "../parsers/common/index.js";
+import { ActivityAnalyzer } from "./ActivityAnalyzer.js";
+import { CrossFileAnalyzer } from "./CrossFileAnalyzer.js";
 import { OOAnalyzer } from "./OOAnalyzer.js";
 import { UnifiedSequenceAnalyzer } from "./UnifiedSequenceAnalyzer.js";
-import { CrossFileAnalyzer } from "./CrossFileAnalyzer.js";
-import { ParserService } from "../services/ParserService.js";
 
 // Simplified dependency information
 export interface DependencyInfo {
@@ -620,6 +621,9 @@ export class UMLAnalyzer {
     } else if (type === "sequence") {
       // Sequence diagrams use UnifiedAST for all languages
       return this.generateSequenceDiagramFromUnifiedAST(ast, code);
+    } else if (type === "activity") {
+      // Activity diagrams (flowcharts)
+      return this.generateActivityDiagram(ast);
     }
 
     throw new Error(`Unsupported diagram type: ${type}`);
@@ -682,6 +686,23 @@ export class UMLAnalyzer {
         `Could not detect language from file path. ` +
         `Supported extensions: .ts, .tsx, .js, .jsx, .java, .py, .pyi, .pyw`,
     );
+  }
+
+  /**
+   * Generate activity diagram (flowchart)
+   */
+  private generateActivityDiagram(ast: UnifiedAST): UMLResult {
+    const analyzer = new ActivityAnalyzer();
+    const mermaidCode = analyzer.analyze(ast);
+
+    return {
+      type: "activity",
+      mermaidCode,
+      generationMode: "native",
+      metadata: {
+        // Add any specific metadata if needed
+      },
+    };
   }
 
   /**

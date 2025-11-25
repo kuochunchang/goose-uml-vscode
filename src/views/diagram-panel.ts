@@ -7,7 +7,7 @@ import * as vscode from "vscode";
 import { UMLAnalyzer } from "../core/analyzers/UMLAnalyzer.js";
 import { VSCodeFileProvider } from "../core/services/vscode-file-provider.js";
 
-export type DiagramType = "class" | "sequence";
+export type DiagramType = "class" | "sequence" | "activity";
 export type AnalysisMode = "forward" | "reverse" | "bidirectional";
 
 export interface DiagramOptions {
@@ -525,6 +525,9 @@ export class DiagramPanel {
                 </button>
                 <button class="btn ${this._currentType === "sequence" ? "active" : ""}" data-type="sequence">
                     Sequence
+                </button>
+                <button class="btn ${this._currentType === "activity" ? "active" : ""}" data-type="activity">
+                    Activity
                 </button>
 
             </div>
