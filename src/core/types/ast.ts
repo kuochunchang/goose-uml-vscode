@@ -387,8 +387,8 @@ export interface OOAnalysisResult {
  * Cross-file analysis options
  */
 export interface CrossFileAnalysisOptions {
-  /** Maximum depth to traverse (1-3) */
-  depth: 1 | 2 | 3;
+  /** Maximum depth to traverse (1-10) */
+  depth: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
   /** Whether to include external types (e.g., from node_modules) */
   includeExternalTypes?: boolean;

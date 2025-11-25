@@ -18,11 +18,11 @@ describe("CrossFileAnalyzer", () => {
 
       await expect(
         analyzer.analyzeForward("/src/User.ts", 0 as any),
-      ).rejects.toThrow("Depth must be between 1 and 3");
+      ).rejects.toThrow("Depth must be between 1 and 10");
 
       await expect(
-        analyzer.analyzeForward("/src/User.ts", 4 as any),
-      ).rejects.toThrow("Depth must be between 1 and 3");
+        analyzer.analyzeForward("/src/User.ts", 11 as any),
+      ).rejects.toThrow("Depth must be between 1 and 10");
     });
 
     it("should throw error if file does not exist", async () => {
