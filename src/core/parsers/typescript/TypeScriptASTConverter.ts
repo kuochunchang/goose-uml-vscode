@@ -6,15 +6,15 @@
 import type { SyntaxNode } from "tree-sitter";
 import Parser from "tree-sitter";
 import type {
-    ClassInfo,
-    ExportInfo,
-    FunctionInfo,
-    ImportInfo,
-    InterfaceInfo,
-    MethodInfo,
-    ParameterInfo,
-    PropertyInfo,
-    UnifiedAST,
+  ClassInfo,
+  ExportInfo,
+  FunctionInfo,
+  ImportInfo,
+  InterfaceInfo,
+  MethodInfo,
+  ParameterInfo,
+  PropertyInfo,
+  UnifiedAST,
 } from "../../types/index.js";
 
 /**
