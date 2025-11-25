@@ -76,13 +76,7 @@ const DEFAULT_EXCLUDE_PATTERNS: Record<SupportedLanguage, string[]> = {
     "**/build/**",
     "**/.git/**",
   ],
-  go: [
-    "**/vendor/**",
-    "**/.git/**",
-    "**/bin/**",
-    "**/pkg/**",
-    "**/.vscode/**",
-  ],
+  go: ["**/vendor/**", "**/.git/**", "**/bin/**", "**/pkg/**", "**/.vscode/**"],
 };
 
 /**
