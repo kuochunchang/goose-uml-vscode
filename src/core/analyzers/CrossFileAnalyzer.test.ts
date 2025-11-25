@@ -17,11 +17,11 @@ describe("CrossFileAnalyzer", () => {
       fileProvider.addFile("/src/User.ts", TS_FIXTURES.simpleClass);
 
       await expect(
-        analyzer.analyzeForward("/src/User.ts", 0 as any),
+        analyzer.analyzeForward("/src/User.ts", 0 as unknown as number),
       ).rejects.toThrow("Depth must be between 1 and 10");
 
       await expect(
-        analyzer.analyzeForward("/src/User.ts", 11 as any),
+        analyzer.analyzeForward("/src/User.ts", 11 as unknown as number),
       ).rejects.toThrow("Depth must be between 1 and 10");
     });
 

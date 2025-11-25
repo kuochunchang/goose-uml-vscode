@@ -38,4 +38,3 @@ export interface SequenceAnalysisResult {
   interactions: SequenceInteraction[];
   entryPoints: string[]; // Entry point methods
 }
-

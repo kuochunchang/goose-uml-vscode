@@ -20,6 +20,7 @@ import { JavaScriptParser } from "./core/parsers/typescript/JavaScriptParser.js"
 /**
  * Extension activation
  */
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {

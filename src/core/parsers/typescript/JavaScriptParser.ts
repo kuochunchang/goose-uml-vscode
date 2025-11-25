@@ -29,6 +29,7 @@ export class JavaScriptParser implements ILanguageParser {
   /**
    * Parse JavaScript code and convert to UnifiedAST
    */
+  // eslint-disable-next-line @typescript-eslint/require-await
   async parse(code: string, filePath: string): Promise<UnifiedAST> {
     try {
       const tree = this.parser.parse(code);

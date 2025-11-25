@@ -205,7 +205,11 @@ export class ImportIndex {
   /**
    * Get index statistics
    */
-  getStats() {
+  getStats(): {
+    classCount: number;
+    fileCount: number;
+    builtAt: string;
+  } {
     return {
       classCount: this.index.size,
       fileCount: new Set(Array.from(this.index.values()).flat()).size,

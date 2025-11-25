@@ -17,7 +17,6 @@ import type {
  * OO Analysis Service for extracting object-oriented relationships
  */
 export class OOAnalyzer {
-
   /**
    * Resolve type information from type annotation
    */
