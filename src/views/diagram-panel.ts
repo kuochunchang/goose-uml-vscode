@@ -11,7 +11,7 @@ export type DiagramType = "class" | "sequence";
 export type AnalysisMode = "forward" | "reverse" | "bidirectional";
 
 export interface DiagramOptions {
-  depth: 0 | 1 | 2 | 3;
+  depth: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
   mode: AnalysisMode;
 }
 
@@ -72,6 +72,9 @@ export class DiagramPanel {
       DiagramPanel.currentPanel._panel.reveal(column);
       if (file) {
         DiagramPanel.currentPanel._currentFile = file;
+        // Update HTML to show loading state immediately
+        DiagramPanel.currentPanel._panel.webview.html =
+          DiagramPanel.currentPanel._getWebviewContent();
         void DiagramPanel.currentPanel._generateDiagram();
       }
       return DiagramPanel.currentPanel;
@@ -93,6 +96,9 @@ export class DiagramPanel {
 
     if (file) {
       DiagramPanel.currentPanel._currentFile = file;
+      // Update HTML to show loading state immediately
+      DiagramPanel.currentPanel._panel.webview.html =
+        DiagramPanel.currentPanel._getWebviewContent();
       void DiagramPanel.currentPanel._generateDiagram();
     }
 
@@ -333,6 +339,18 @@ export class DiagramPanel {
             min-width: 50px;
         }
 
+        .depth-display {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--vscode-editor-foreground);
+            padding: 4px 12px;
+            min-width: 30px;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .btn-group {
             display: flex;
             gap: 1px;
@@ -542,14 +560,13 @@ export class DiagramPanel {
                 Depth:
                 <span class="tooltiptext">
                     0: Single file only<br>
-                    1-3: Cross-file analysis with increasing depth
+                    1-10: Cross-file analysis with increasing depth
                 </span>
             </span>
             <div class="btn-group" id="depthSelector">
-                <button class="btn ${this._currentOptions.depth === 0 ? "active" : ""}" data-depth="0">0</button>
-                <button class="btn ${this._currentOptions.depth === 1 ? "active" : ""}" data-depth="1">1</button>
-                <button class="btn ${this._currentOptions.depth === 2 ? "active" : ""}" data-depth="2">2</button>
-                <button class="btn ${this._currentOptions.depth === 3 ? "active" : ""}" data-depth="3">3</button>
+                <button class="btn" id="depthDecreaseBtn" ${this._currentOptions.depth === 0 ? "disabled" : ""}>－</button>
+                <span class="depth-display" id="depthDisplay">${this._currentOptions.depth}</span>
+                <button class="btn" id="depthIncreaseBtn" ${this._currentOptions.depth === 10 ? "disabled" : ""}>＋</button>
             </div>
 
             <span class="toolbar-label tooltip">
@@ -587,16 +604,23 @@ export class DiagramPanel {
 
     <!-- Diagram Display -->
     <div class="diagram-container" id="diagramContainer">
-        ${
-          this._mermaidCode
-            ? `<div class="mermaid">${this._mermaidCode}</div>`
+      ${
+        this._mermaidCode
+          ? `<div class="mermaid">${this._mermaidCode}</div>`
+          : this._currentFile
+            ? `
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Generating ${this._currentType} diagram...</p>
+      </div>
+      `
             : `
-        <div class="empty-state">
-            <div class="empty-state-icon">📊</div>
-            <p>Select a supported file (TypeScript, JavaScript, Java, or Python) and click Refresh to generate a UML diagram</p>
-        </div>
-        `
-        }
+      <div class="empty-state">
+        <div class="empty-state-icon">📊</div>
+        <p>Select a supported file (TypeScript, JavaScript, Java, or Python) and click Refresh to generate a UML diagram</p>
+      </div>
+      `
+      }
     </div>
 
     <script type="module" nonce="${nonce}">
@@ -756,14 +780,19 @@ export class DiagramPanel {
             }
         });
 
-        document.getElementById('depthSelector').addEventListener('click', (e) => {
-            if (e.target.matches('.btn')) {
-                const depth = parseInt(e.target.dataset.depth);
-                if (!isNaN(depth) && depth !== state.depth) {
-                    state.depth = depth;
-                    updateButtons();
-                    regenerate();
-                }
+        document.getElementById('depthDecreaseBtn').addEventListener('click', () => {
+            if (state.depth > 0) {
+                state.depth--;
+                updateButtons();
+                regenerate();
+            }
+        });
+
+        document.getElementById('depthIncreaseBtn').addEventListener('click', () => {
+            if (state.depth < 10) {
+                state.depth++;
+                updateButtons();
+                regenerate();
             }
         });
 
@@ -855,10 +884,20 @@ export class DiagramPanel {
                 btn.classList.toggle('active', btn.dataset.type === state.type);
             });
 
-            // Update depth buttons
-            document.querySelectorAll('#depthSelector .btn').forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.dataset.depth) === state.depth);
-            });
+            // Update depth display and buttons
+            const depthDisplay = document.getElementById('depthDisplay');
+            const depthDecreaseBtn = document.getElementById('depthDecreaseBtn');
+            const depthIncreaseBtn = document.getElementById('depthIncreaseBtn');
+            
+            if (depthDisplay) {
+                depthDisplay.textContent = state.depth.toString();
+            }
+            if (depthDecreaseBtn) {
+                depthDecreaseBtn.disabled = state.depth === 0;
+            }
+            if (depthIncreaseBtn) {
+                depthIncreaseBtn.disabled = state.depth === 10;
+            }
 
             // Update mode buttons
             const modeButtons = document.querySelectorAll('#modeSelector .btn');
