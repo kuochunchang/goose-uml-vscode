@@ -32,12 +32,40 @@ export class PythonParser implements ILanguageParser {
   async parse(code: string, filePath: string): Promise<UnifiedAST> {
     try {
       const tree = this.parser.parse(code);
+      
+      // Check for parse errors (tree-sitter doesn't throw on syntax errors)
+      // Check if root node has ERROR type or contains ERROR nodes
+      if (this.hasParseErrors(tree.rootNode)) {
+        throw new Error(
+          `Failed to parse Python code in ${filePath}: Syntax errors detected`,
+        );
+      }
+      
       return this.converter.convert(tree.rootNode, filePath, tree);
     } catch (error) {
       throw new Error(
         `Failed to parse Python code in ${filePath}: ${(error as Error).message}`,
       );
     }
+  }
+
+  /**
+   * Check if a node or its children contain parse errors
+   */
+  private hasParseErrors(node: any): boolean {
+    if (node.type === "ERROR" || node.type === "MISSING") {
+      return true;
+    }
+    
+    // Check children recursively
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i);
+      if (child && this.hasParseErrors(child)) {
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   /**

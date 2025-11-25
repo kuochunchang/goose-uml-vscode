@@ -46,7 +46,10 @@ export class TypeScriptASTConverter {
       }
 
       // Extract classes
-      if (node.type === "class_declaration") {
+      if (
+        node.type === "class_declaration" ||
+        node.type === "abstract_class_declaration"
+      ) {
         const classInfo = this.extractClass(node);
         if (classInfo) {
           classes.push(classInfo);
@@ -140,23 +143,57 @@ export class TypeScriptASTConverter {
 
     // Extract superclass (extends)
     let extendsClass: string | undefined;
-    const superclassNode = node.childForFieldName("superclass");
-    if (superclassNode) {
-      extendsClass = this.extractTypeName(superclassNode);
-    }
 
     // Extract implemented interfaces
     const implementsInterfaces: string[] = [];
-    const implementsNode = node.childForFieldName("implements");
-    if (implementsNode) {
-      for (const child of implementsNode.children) {
-        if (
-          child.type === "type_identifier" ||
-          child.type === "nested_type_identifier"
-        ) {
-          const typeName = this.extractTypeName(child);
-          if (typeName) {
-            implementsInterfaces.push(typeName);
+
+    // Find class_heritage node
+    const heritageNode = node.children.find((c) => c.type === "class_heritage");
+
+    if (heritageNode) {
+      // Extract extends
+      const extendsClause = heritageNode.children.find(
+        (c) => c.type === "extends_clause",
+      );
+      if (extendsClause) {
+        const extendsNode = extendsClause.children.find(
+          (c) =>
+            c.type === "identifier" ||
+            c.type === "type_identifier" ||
+            c.type === "nested_type_identifier" ||
+            c.type === "generic_type" ||
+            c.type === "member_expression" ||
+            c.type === "call_expression",
+        );
+
+        if (extendsNode) {
+          if (
+            extendsNode.type === "identifier" ||
+            extendsNode.type === "member_expression" ||
+            extendsNode.type === "call_expression"
+          ) {
+            extendsClass = extendsNode.text;
+          } else {
+            extendsClass = this.extractTypeName(extendsNode);
+          }
+        }
+      }
+
+      // Extract implements
+      const implementsClause = heritageNode.children.find(
+        (c) => c.type === "implements_clause",
+      );
+      if (implementsClause) {
+        for (const child of implementsClause.children) {
+          if (
+            child.type === "type_identifier" ||
+            child.type === "nested_type_identifier" ||
+            child.type === "generic_type"
+          ) {
+            const typeName = this.extractTypeName(child);
+            if (typeName) {
+              implementsInterfaces.push(typeName);
+            }
           }
         }
       }
@@ -168,7 +205,10 @@ export class TypeScriptASTConverter {
       for (const member of bodyNode.children) {
         if (
           member.type === "property_signature" ||
-          member.type === "public_field_definition"
+          member.type === "public_field_definition" ||
+          member.type === "private_field_definition" ||
+          member.type === "protected_field_definition" ||
+          member.type === "abstract_field_signature"
         ) {
           const prop = this.extractProperty(member);
           if (prop) properties.push(prop);
@@ -226,12 +266,18 @@ export class TypeScriptASTConverter {
 
     // Extract extended interfaces
     const extendsInterfaces: string[] = [];
-    const extendsNode = node.childForFieldName("extends");
-    if (extendsNode) {
-      for (const child of extendsNode.children) {
+
+    // Find extends_type_clause
+    const extendsClause = node.children.find(
+      (c) => c.type === "extends_type_clause",
+    );
+
+    if (extendsClause) {
+      for (const child of extendsClause.children) {
         if (
           child.type === "type_identifier" ||
-          child.type === "nested_type_identifier"
+          child.type === "nested_type_identifier" ||
+          child.type === "generic_type"
         ) {
           const typeName = this.extractTypeName(child);
           if (typeName) {
@@ -393,9 +439,61 @@ export class TypeScriptASTConverter {
 
     // Extract type
     let typeStr: string | undefined;
-    const typeNode = node.childForFieldName("type");
-    if (typeNode) {
+    // Try field "type" first (for property_signature)
+    let typeNode: SyntaxNode | null = node.childForFieldName("type");
+
+    // If type field returns type_annotation (which includes the colon), extract the actual type from it
+    if (typeNode && typeNode.type === "type_annotation") {
+      // type_annotation has children: [':', type_identifier/predefined_type/etc]
+      // Find the actual type node (skip the ':' token)
+      const actualTypeNode = typeNode.children.find(
+        (child) =>
+          child.type === "type_identifier" ||
+          child.type === "predefined_type" ||
+          child.type === "generic_type" ||
+          child.type === "array_type" ||
+          child.type === "union_type" ||
+          child.type === "intersection_type" ||
+          child.type === "nested_type_identifier",
+      );
+      if (actualTypeNode) {
+        typeStr = this.extractTypeName(actualTypeNode);
+      }
+    } else if (typeNode) {
+      // Direct type node (for property_signature)
       typeStr = this.extractTypeName(typeNode);
+    } else {
+      // If not found via field, try finding type_annotation in children
+      const typeAnnotationNode =
+        node.children.find((child) => child.type === "type_annotation") ||
+        node.namedChildren.find((child) => child.type === "type_annotation");
+      if (typeAnnotationNode) {
+        // Find the type node (skip the ':' token)
+        const actualTypeNode =
+          typeAnnotationNode.children.find(
+            (child) =>
+              child.type === "type_identifier" ||
+              child.type === "predefined_type" ||
+              child.type === "generic_type" ||
+              child.type === "array_type" ||
+              child.type === "union_type" ||
+              child.type === "intersection_type" ||
+              child.type === "nested_type_identifier",
+          ) ||
+          typeAnnotationNode.namedChildren.find(
+            (child) =>
+              child.type === "type_identifier" ||
+              child.type === "predefined_type" ||
+              child.type === "generic_type" ||
+              child.type === "array_type" ||
+              child.type === "union_type" ||
+              child.type === "intersection_type" ||
+              child.type === "nested_type_identifier",
+          );
+        if (actualTypeNode) {
+          typeStr = this.extractTypeName(actualTypeNode);
+        }
+      }
     }
 
     // Extract visibility
@@ -404,8 +502,8 @@ export class TypeScriptASTConverter {
     // Check if type is an array
     const isArray = typeStr
       ? typeStr.endsWith("[]") ||
-        typeStr.startsWith("Array<") ||
-        typeStr === "Array"
+      typeStr.startsWith("Array<") ||
+      typeStr === "Array"
       : false;
 
     // Check if type is a class type
@@ -432,9 +530,46 @@ export class TypeScriptASTConverter {
 
     // Extract type
     let paramType: string | undefined;
-    const typeNode = node.childForFieldName("type");
-    if (typeNode) {
+    let typeNode = node.childForFieldName("type");
+
+    // If type field returns type_annotation, extract the actual type from it
+    if (typeNode && typeNode.type === "type_annotation") {
+      // type_annotation has children: [':', type_identifier/predefined_type/etc]
+      const actualTypeNode = typeNode.children.find(
+        (child) =>
+          child.type === "type_identifier" ||
+          child.type === "predefined_type" ||
+          child.type === "generic_type" ||
+          child.type === "array_type" ||
+          child.type === "union_type" ||
+          child.type === "intersection_type" ||
+          child.type === "nested_type_identifier",
+      );
+      if (actualTypeNode) {
+        paramType = this.extractTypeName(actualTypeNode);
+      }
+    } else if (typeNode) {
       paramType = this.extractTypeName(typeNode);
+    } else {
+      // Try finding type_annotation in children
+      const typeAnnotationNode = node.children.find(
+        (child) => child.type === "type_annotation",
+      );
+      if (typeAnnotationNode) {
+        const actualTypeNode = typeAnnotationNode.children.find(
+          (child) =>
+            child.type === "type_identifier" ||
+            child.type === "predefined_type" ||
+            child.type === "generic_type" ||
+            child.type === "array_type" ||
+            child.type === "union_type" ||
+            child.type === "intersection_type" ||
+            child.type === "nested_type_identifier",
+        );
+        if (actualTypeNode) {
+          paramType = this.extractTypeName(actualTypeNode);
+        }
+      }
     }
 
     // Check if optional
@@ -454,7 +589,7 @@ export class TypeScriptASTConverter {
     const sourceNode = node.childForFieldName("source");
     if (!sourceNode) return null;
 
-    const source = sourceNode.text.replace(/['"]/g, ""); // Remove quotes
+    const source = sourceNode.text.replace(/['"`]/g, ""); // Remove quotes
     const specifiers: string[] = [];
     let isDefault = false;
     let isNamespace = false;
@@ -467,29 +602,45 @@ export class TypeScriptASTConverter {
     }
 
     // Extract import specifiers
-    const importClauseNode = node.childForFieldName("import");
+    // Note: childForFieldName("import") doesn't work for tree-sitter-typescript
+    // We need to find import_clause in children
+    const importClauseNode = node.children.find(
+      (child) => child.type === "import_clause",
+    );
+
     if (importClauseNode) {
-      // Default import
-      if (importClauseNode.type === "identifier") {
-        isDefault = true;
-        specifiers.push(importClauseNode.text);
-      }
-      // Namespace import (import * as alias)
-      else if (importClauseNode.type === "namespace_import") {
-        isNamespace = true;
-        const aliasNode = importClauseNode.childForFieldName("alias");
-        if (aliasNode) {
-          namespaceAlias = aliasNode.text;
-          specifiers.push(aliasNode.text);
+      // Check for named_imports child
+      const namedImportsNode = importClauseNode.children.find(
+        (child) => child.type === "named_imports",
+      );
+
+      if (namedImportsNode) {
+        // Named imports: import { A, B } from './module'
+        for (const child of namedImportsNode.children) {
+          if (child.type === "import_specifier") {
+            // import_specifier has an identifier child
+            const identifierNode = child.children.find(
+              (c) => c.type === "identifier",
+            );
+            if (identifierNode) {
+              specifiers.push(identifierNode.text);
+            }
+          }
         }
-      }
-      // Named imports
-      else if (importClauseNode.type === "named_imports") {
-        for (const spec of importClauseNode.children) {
-          if (spec.type === "import_specifier") {
-            const importedNode = spec.childForFieldName("name");
-            if (importedNode) {
-              specifiers.push(importedNode.text);
+      } else {
+        // Check for default import or namespace import
+        for (const child of importClauseNode.children) {
+          if (child.type === "identifier") {
+            // Default import: import Foo from './module'
+            isDefault = true;
+            specifiers.push(child.text);
+          } else if (child.type === "namespace_import") {
+            // Namespace import: import * as Foo from './module'
+            isNamespace = true;
+            const aliasNode = child.childForFieldName("alias");
+            if (aliasNode) {
+              namespaceAlias = aliasNode.text;
+              specifiers.push(aliasNode.text);
             }
           }
         }
@@ -522,6 +673,7 @@ export class TypeScriptASTConverter {
       const declaration = node.children.find(
         (child) =>
           child.type === "class_declaration" ||
+          child.type === "abstract_class_declaration" ||
           child.type === "function_declaration" ||
           child.type === "identifier",
       );
@@ -529,7 +681,10 @@ export class TypeScriptASTConverter {
         let name = "";
         let exportType: ExportInfo["exportType"] = "variable";
 
-        if (declaration.type === "class_declaration") {
+        if (
+          declaration.type === "class_declaration" ||
+          declaration.type === "abstract_class_declaration"
+        ) {
           const nameNode = declaration.childForFieldName("name");
           name = nameNode?.text || "default";
           exportType = "class";
@@ -556,6 +711,7 @@ export class TypeScriptASTConverter {
       const declaration = node.children.find(
         (child) =>
           child.type === "class_declaration" ||
+          child.type === "abstract_class_declaration" ||
           child.type === "function_declaration" ||
           child.type === "variable_declaration",
       );
@@ -564,7 +720,10 @@ export class TypeScriptASTConverter {
         let name = "";
         let exportType: ExportInfo["exportType"] = "variable";
 
-        if (declaration.type === "class_declaration") {
+        if (
+          declaration.type === "class_declaration" ||
+          declaration.type === "abstract_class_declaration"
+        ) {
           const nameNode = declaration.childForFieldName("name");
           name = nameNode?.text || "";
           exportType = "class";
