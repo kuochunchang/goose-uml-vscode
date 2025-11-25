@@ -14,6 +14,8 @@ import type {
   ParameterInfo,
   UnifiedAST,
   ImportInfo,
+  FileAnalysisResult,
+  BidirectionalAnalysisResult,
 } from "../types/index.js";
 import { MermaidValidator } from "../utils/mermaidValidator.js";
 import { LanguageDetector } from "../parsers/common/index.js";
@@ -213,18 +215,162 @@ export class UMLAnalyzer {
     // Create CrossFileAnalyzer instance
     const crossFileAnalyzer = new CrossFileAnalyzer(this.fileProvider);
 
-    // Execute bidirectional analysis
-    // Note: Currently only bidirectional mode is fully implemented
-    // Forward-only and reverse-only modes will be added in future iterations
-    const analysisResult = await crossFileAnalyzer.analyzeBidirectional(
-      filePath,
-      depth,
-    );
+    // Execute analysis based on mode
+    let analysisResult: BidirectionalAnalysisResult;
+
+    if (mode === "forward") {
+      // Forward-only mode: only analyze what this file imports
+      const forwardResults = await crossFileAnalyzer.analyzeForward(
+        filePath,
+        depth,
+      );
+      // Convert to BidirectionalAnalysisResult format
+      const forwardDeps: FileAnalysisResult[] = [];
+      const allClasses: ClassInfo[] = [];
+      const allRelationships: ASTDependencyInfo[] = [];
+      const classSet = new Set<string>();
+      const relationshipSet = new Set<string>();
+
+      for (const [path, result] of forwardResults.entries()) {
+        if (path !== filePath) {
+          forwardDeps.push(result);
+        }
+        for (const cls of result.classes) {
+          const key = `${result.filePath}:${cls.name}`;
+          if (!classSet.has(key)) {
+            classSet.add(key);
+            allClasses.push(cls);
+          }
+        }
+        for (const rel of result.relationships) {
+          const key = `${rel.from}:${rel.to}:${rel.type}:${rel.context || ""}`;
+          if (!relationshipSet.has(key)) {
+            relationshipSet.add(key);
+            allRelationships.push(rel);
+          }
+        }
+      }
+
+      analysisResult = {
+        targetFile: filePath,
+        forwardDeps,
+        reverseDeps: [],
+        allClasses,
+        relationships: allRelationships,
+        stats: {
+          totalFiles: forwardResults.size,
+          totalClasses: allClasses.length,
+          totalRelationships: allRelationships.length,
+          maxDepth: Math.max(
+            ...Array.from(forwardResults.values()).map((r) => r.depth),
+          ),
+        },
+      };
+    } else if (mode === "reverse") {
+      // Reverse-only mode: only analyze what imports this file
+      const reverseResults = await crossFileAnalyzer.analyzeReverse(
+        filePath,
+        depth,
+      );
+      // Convert to BidirectionalAnalysisResult format
+      const reverseDeps: FileAnalysisResult[] = [];
+      const allClasses: ClassInfo[] = [];
+      const allRelationships: ASTDependencyInfo[] = [];
+      const classSet = new Set<string>();
+      const relationshipSet = new Set<string>();
+
+      // Separate target file classes from other classes, grouped by depth
+      const targetFileClasses: ClassInfo[] = [];
+
+      // Build a map of depth to FileAnalysisResult
+      const depthMap = new Map<
+        number,
+        Array<{ filePath: string; result: FileAnalysisResult }>
+      >();
+
+      for (const [path, result] of reverseResults.entries()) {
+        if (path !== filePath) {
+          reverseDeps.push(result);
+        }
+
+        // Group by depth for ordering
+        if (!depthMap.has(result.depth)) {
+          depthMap.set(result.depth, []);
+        }
+        depthMap.get(result.depth)!.push({ filePath: path, result });
+
+        // Separate target file classes
+        if (path === filePath) {
+          for (const cls of result.classes) {
+            targetFileClasses.push(cls);
+          }
+        }
+      }
+
+      // Process classes in depth order (0, 1, 2, ... n-1)
+      const otherClasses: ClassInfo[] = [];
+      const sortedDepths = Array.from(depthMap.keys()).sort((a, b) => a - b);
+
+      for (const d of sortedDepths) {
+        const filesAtDepth = depthMap.get(d)!;
+        for (const { filePath: fileAtDepth, result } of filesAtDepth) {
+          // Skip target file (it will be added at the end)
+          if (fileAtDepth === filePath) {
+            continue;
+          }
+
+          for (const cls of result.classes) {
+            const key = `${result.filePath}:${cls.name}`;
+            if (!classSet.has(key)) {
+              classSet.add(key);
+              otherClasses.push(cls);
+            }
+          }
+        }
+      }
+
+      // Add relationships (after classes are organized)
+      for (const [, result] of reverseResults.entries()) {
+        for (const rel of result.relationships) {
+          const key = `${rel.from}:${rel.to}:${rel.type}:${rel.context || ""}`;
+          if (!relationshipSet.has(key)) {
+            relationshipSet.add(key);
+            allRelationships.push(rel);
+          }
+        }
+      }
+
+      // In reverse mode: classes ordered by depth (0 -> n), then target file at the end
+      const orderedClasses = [...otherClasses, ...targetFileClasses];
+
+      analysisResult = {
+        targetFile: filePath,
+        forwardDeps: [],
+        reverseDeps,
+        allClasses: orderedClasses,
+        relationships: allRelationships,
+        stats: {
+          totalFiles: reverseResults.size,
+          totalClasses: allClasses.length,
+          totalRelationships: allRelationships.length,
+          maxDepth: Math.max(
+            ...Array.from(reverseResults.values()).map((r) => r.depth),
+          ),
+        },
+      };
+    } else {
+      // Bidirectional mode: analyze both forward and reverse
+      analysisResult = await crossFileAnalyzer.analyzeBidirectional(
+        filePath,
+        depth,
+      );
+    }
 
     // Generate Mermaid class diagram from analysis result
     const mermaidCode = this.generateMermaidClassDiagram(
       analysisResult.allClasses,
       analysisResult.relationships,
+      mode, // Pass mode to control arrow direction
     );
 
     // Return UML result with cross-file metadata
@@ -959,8 +1105,14 @@ export class UMLAnalyzer {
   private generateMermaidClassDiagram(
     classes: ClassInfo[],
     dependencies?: ASTDependencyInfo[],
+    mode?: "forward" | "reverse" | "bidirectional",
   ): string {
     let mermaid = "classDiagram\n";
+
+    // In reverse mode, add direction TB to ensure proper top-to-bottom layout
+    if (mode === "reverse") {
+      mermaid += "  direction TB\n";
+    }
 
     // If no classes found, generate a placeholder to avoid empty diagram
     if (classes.length === 0) {
@@ -1032,7 +1184,13 @@ export class UMLAnalyzer {
       );
 
       internalDeps.forEach((dep) => {
-        const { from, to, type, cardinality, context } = dep;
+        let { from, to, type, cardinality, context } = dep;
+
+        // In reverse mode, swap from/to to reverse arrow direction
+        // This makes the target file (most depended upon) appear at the bottom
+        if (mode === "reverse") {
+          [from, to] = [to, from];
+        }
 
         // Generate Mermaid syntax based on relationship type
         switch (type) {

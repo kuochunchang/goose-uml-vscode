@@ -4,7 +4,9 @@
       "Bash(npm install:*)",
       "Bash(npm test:*)",
       "Bash(npm run test:coverage:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm:*)"
     ],
     "deny": [],
     "ask": []

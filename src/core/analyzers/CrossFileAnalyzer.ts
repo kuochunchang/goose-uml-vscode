@@ -97,26 +97,379 @@ export class CrossFileAnalyzer {
     return results;
   }
 
-  // TODO: Import index functionality will be handled by the Node.js adapter
-  // The core analyzer focuses on forward analysis only
-  //
-  // Reverse dependency analysis methods (commented out):
-  // - analyzeReverse()
-  // - analyzeReverseDependencies()
-  // - createReverseDependencies()
-  // - getOrBuildImportIndex()
-  //
-  // These will be implemented in @code-review-goose/analysis-adapter-node
-  // using ImportIndexBuilder and providing bidirectional analysis
+  /**
+   * Analyze reverse dependencies (who imports this file)
+   *
+   * @param filePath - File path to analyze
+   * @param maxDepth - Maximum tracking depth (1-10)
+   * @returns Map<filePath, FileAnalysisResult> - All analyzed files that import the target file
+   */
+  async analyzeReverse(
+    filePath: string,
+    maxDepth: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+  ): Promise<Map<string, FileAnalysisResult>> {
+    // Validate depth parameter
+    if (maxDepth < 1 || maxDepth > 10) {
+      throw new Error("Depth must be between 1 and 10");
+    }
+
+    // Verify file exists
+    if (!(await this.fileProvider.exists(filePath))) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+
+    // Reset visited tracking
+    this.visited.clear();
+
+    // Build result Map
+    const results = new Map<string, FileAnalysisResult>();
+
+    // 1. First, analyze the target file itself (it will be at the end)
+    const targetAnalysis = await this.analyzeFile(filePath, 0);
+    results.set(filePath, targetAnalysis);
+
+    // 2. Find files that import the target file
+    const importers = await this.findFilesThatImport(filePath);
+
+    // 3. Analyze each importer and its forward dependencies recursively
+    // This creates a chain: importer's deps -> importer -> target file
+    for (const importerPath of importers) {
+      if (!this.visited.has(importerPath)) {
+        // Analyze importer and its forward dependencies (depth-1 to leave room for target)
+        await this.analyzeFileRecursive(
+          importerPath,
+          0,
+          Math.max(1, maxDepth - 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+          results,
+        );
+
+        // 4. Create explicit dependency relationship from importer to target file
+        // Find classes in importer that import classes from target file
+        const importerAnalysis = results.get(importerPath);
+        if (importerAnalysis) {
+          // Get target file's exported classes
+          const targetExportedClasses = new Set(
+            targetAnalysis.classes.map((cls) => cls.name),
+          );
+          for (const exp of targetAnalysis.exports) {
+            if (exp.name) {
+              targetExportedClasses.add(exp.name);
+            }
+          }
+
+          // Check importer's imports to find which classes it imports from target
+          for (const imp of importerAnalysis.imports) {
+            for (const specifier of imp.specifiers) {
+              if (targetExportedClasses.has(specifier)) {
+                // For each class in importer, check if it uses the imported class
+                for (const importerClass of importerAnalysis.classes) {
+                  // Check if this class uses the imported class
+                  // Look in relationships, properties, and method parameters
+                  let usesTargetClass = false;
+
+                  // Check relationships
+                  usesTargetClass = importerAnalysis.relationships.some(
+                    (rel) => rel.to === specifier,
+                  );
+
+                  // Check properties
+                  if (!usesTargetClass) {
+                    usesTargetClass = importerClass.properties.some(
+                      (prop) => prop.type === specifier,
+                    );
+                  }
+
+                  // Check method parameters and return types
+                  if (!usesTargetClass) {
+                    usesTargetClass = importerClass.methods.some(
+                      (method) =>
+                        method.parameters.some(
+                          (param) => param.type === specifier,
+                        ) || method.returnType === specifier,
+                    );
+                  }
+
+                  // If the class uses the imported class, add dependency relationship
+                  if (usesTargetClass) {
+                    // Add dependency relationship: importer class -> target class
+                    const existingRel = importerAnalysis.relationships.find(
+                      (rel) =>
+                        rel.from === importerClass.name &&
+                        rel.to === specifier &&
+                        rel.type === "dependency",
+                    );
+
+                    if (!existingRel) {
+                      importerAnalysis.relationships.push({
+                        from: importerClass.name,
+                        to: specifier,
+                        type: "dependency",
+                        lineNumber: imp.lineNumber,
+                        context: `imports from ${path.basename(filePath)}`,
+                      });
+                    }
+                  }
+                }
+
+                // If no specific class uses it, but the file imports it,
+                // create a relationship from the first class in importer (or create a file-level relationship)
+                // For simplicity, we'll skip this case as it's less meaningful
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 5. Adjust depths in reverse mode: target file should be at maximum depth
+    // In reverse analysis, the target file is the deepest (most depended upon)
+    // Calculate the maximum depth found in importers
+    let maxDepthFound = 0;
+    for (const result of results.values()) {
+      if (result.filePath !== filePath) {
+        maxDepthFound = Math.max(maxDepthFound, result.depth);
+      }
+    }
+
+    // If importers exist, target file depth = maxDepthFound + 1
+    if (maxDepthFound > 0) {
+      targetAnalysis.depth = maxDepthFound + 1;
+    }
+
+    return results;
+  }
+
+  /**
+   * Find files that import the target file
+   * Scans project files to find which files import classes/exports from the target file
+   */
+  private async findFilesThatImport(
+    targetFilePath: string,
+  ): Promise<string[]> {
+    const importers: string[] = [];
+
+    try {
+      // Get target file's exports (classes, interfaces, etc.)
+      const targetAnalysis = await this.analyzeFile(targetFilePath, 0);
+      const exportedNames = new Set<string>();
+
+      // Collect exported class/interface names
+      for (const cls of targetAnalysis.classes) {
+        exportedNames.add(cls.name);
+      }
+
+      // Also check explicit exports
+      for (const exp of targetAnalysis.exports) {
+        if (exp.name) {
+          exportedNames.add(exp.name);
+        }
+      }
+
+      if (exportedNames.size === 0) {
+        // If no exports found, use filename as fallback
+        const fileName = path.basename(targetFilePath, path.extname(targetFilePath));
+        exportedNames.add(fileName);
+      }
+
+      // Search for files that import any of these names
+      const language = LanguageDetector.detectFromFilePath(targetFilePath);
+      const patterns = this.getSearchPatterns(language);
+
+      // Limit search scope for performance (only search in same directory and parent directories)
+      // For more thorough search, we could search the entire project, but that's slower
+      const targetDir = path.dirname(targetFilePath);
+      const searchDirs = [
+        targetDir, // Same directory
+        path.dirname(targetDir), // Parent directory
+        path.dirname(path.dirname(targetDir)), // Grandparent directory
+      ];
+
+      for (const pattern of patterns) {
+        // First try searching in relevant directories
+        for (const searchDir of searchDirs) {
+          try {
+            // Construct pattern relative to search directory
+            const relativePattern = path.join(searchDir, "**", path.basename(pattern));
+            const candidateFiles = await this.fileProvider.listFiles(relativePattern);
+            for (const candidateFile of candidateFiles) {
+              // Skip the target file itself
+              if (candidateFile === targetFilePath) {
+                continue;
+              }
+
+              // Check if this file imports any of the exported names
+              if (
+                await this.fileImportsAny(
+                  candidateFile,
+                  exportedNames,
+                  targetFilePath,
+                )
+              ) {
+                if (!importers.includes(candidateFile)) {
+                  importers.push(candidateFile);
+                }
+              }
+            }
+          } catch {
+            // Ignore errors for specific directories
+          }
+        }
+
+        // Also do a project-wide search (but limit results for performance)
+        try {
+          const allCandidateFiles = await this.fileProvider.listFiles(pattern);
+          // Limit to first 100 files for performance
+          const limitedFiles = allCandidateFiles.slice(0, 100);
+          for (const candidateFile of limitedFiles) {
+            // Skip the target file itself and files already checked
+            if (
+              candidateFile === targetFilePath ||
+              importers.includes(candidateFile)
+            ) {
+              continue;
+            }
+
+            // Check if this file imports any of the exported names
+            if (
+              await this.fileImportsAny(
+                candidateFile,
+                exportedNames,
+                targetFilePath,
+              )
+            ) {
+              if (!importers.includes(candidateFile)) {
+                importers.push(candidateFile);
+              }
+            }
+          }
+        } catch {
+          // Ignore errors for project-wide search
+        }
+      }
+    } catch (error) {
+      console.warn(
+        `[CrossFileAnalyzer] Error finding files that import ${targetFilePath}:`,
+        error,
+      );
+    }
+
+    return importers;
+  }
+
+  /**
+   * Get file search patterns for a language
+   */
+  private getSearchPatterns(language: string | null): string[] {
+    if (language === "typescript" || language === "javascript") {
+      return ["**/*.{ts,tsx,js,jsx}"];
+    } else if (language === "java") {
+      return ["**/*.java"];
+    } else if (language === "python") {
+      return ["**/*.py"];
+    }
+    return ["**/*.{ts,tsx,js,jsx,java,py}"];
+  }
+
+  /**
+   * Check if a file imports any of the given names or the target file
+   */
+  private async fileImportsAny(
+    filePath: string,
+    names: Set<string>,
+    targetFilePath: string,
+  ): Promise<boolean> {
+    try {
+      const code = await this.fileProvider.readFile(filePath);
+      const language = LanguageDetector.detectFromFilePath(filePath);
+
+      // Get target file name for path matching
+      const targetFileName = path.basename(
+        targetFilePath,
+        path.extname(targetFilePath),
+      );
+      const targetDir = path.dirname(targetFilePath);
+
+      if (language === "typescript" || language === "javascript") {
+        // Parse and check imports
+        const ast = parse(code, {
+          sourceType: "module",
+          plugins: ["typescript", "jsx", "decorators-legacy", "classProperties"],
+        });
+
+        const imports = this.ooAnalyzer.extractImports(ast);
+        for (const imp of imports) {
+          // Check if any imported specifier matches
+          for (const specifier of imp.specifiers) {
+            if (names.has(specifier)) {
+              return true;
+            }
+          }
+          // Check if import source/path matches target file
+          if (imp.source) {
+            // Check if import source contains the target file name
+            if (imp.source.includes(targetFileName)) {
+              return true;
+            }
+            // Try to resolve import source and check if it matches target file
+            try {
+              const resolvedPath = await this.fileProvider.resolveImport(
+                filePath,
+                imp.source,
+              );
+              if (resolvedPath === targetFilePath) {
+                return true;
+              }
+            } catch {
+              // Ignore resolution errors
+            }
+          }
+        }
+      } else if (language && this.parserService.canParse(filePath)) {
+        // Use unified parser for other languages
+        const ast = await this.parserService.parse(code, filePath);
+        const unifiedAST = ast as UnifiedAST;
+        for (const imp of unifiedAST.imports) {
+          // Check if any imported specifier matches
+          for (const specifier of imp.specifiers) {
+            if (names.has(specifier)) {
+              return true;
+            }
+          }
+          // Check import source for other languages
+          if (imp.source) {
+            if (imp.source.includes(targetFileName)) {
+              return true;
+            }
+            // Try to resolve import source
+            try {
+              const resolvedPath = await this.fileProvider.resolveImport(
+                filePath,
+                imp.source,
+              );
+              if (resolvedPath === targetFilePath) {
+                return true;
+              }
+            } catch {
+              // Ignore resolution errors
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // Skip files that can't be parsed
+      console.debug(
+        `[CrossFileAnalyzer] Failed to check imports in ${filePath}:`,
+        error,
+      );
+    }
+
+    return false;
+  }
 
   /**
    * Analyze bidirectional dependencies (Bidirectional mode)
    *
    * Combines Forward and Reverse analysis for complete dependency view
-   *
-   * Note: This method is kept for API compatibility but currently only
-   * performs forward analysis. Full bidirectional analysis will be
-   * implemented in the adapter layer.
    *
    * @param filePath - File path to analyze
    * @param maxDepth - Maximum tracking depth (1-10)
@@ -139,31 +492,56 @@ export class CrossFileAnalyzer {
     // 1. Execute forward analysis
     const forwardResults = await this.analyzeForward(filePath, maxDepth);
 
-    // 2. Reverse analysis - TODO: Will be implemented in adapter layer
-    // For now, return empty reverse dependencies
-    const reverseResults = new Map<string, FileAnalysisResult>();
+    // 2. Execute reverse analysis
+    const reverseResults = await this.analyzeReverse(filePath, maxDepth);
 
     // 3. Merge results
     const allResults = new Map<string, FileAnalysisResult>();
 
-    // Add forward dependencies (excluding target file)
+    // Add forward dependencies (excluding target file from deps list)
     const forwardDeps: FileAnalysisResult[] = [];
     for (const [path, result] of forwardResults.entries()) {
       if (path !== filePath) {
         forwardDeps.push(result);
       }
+      // Always add to allResults (including target file)
       allResults.set(path, result);
     }
 
-    // Add reverse dependencies (excluding target file and existing ones)
+    // Add reverse dependencies (excluding target file from deps list)
     const reverseDeps: FileAnalysisResult[] = [];
     for (const [path, result] of reverseResults.entries()) {
       if (path !== filePath) {
         reverseDeps.push(result);
       }
-      if (!allResults.has(path)) {
+      // Merge with existing results, combining relationships if file already exists
+      if (allResults.has(path)) {
+        // Merge relationships from reverse analysis
+        const existingResult = allResults.get(path)!;
+        const existingRelKeys = new Set(
+          existingResult.relationships.map(
+            (rel) =>
+              `${rel.from}:${rel.to}:${rel.type}:${rel.context || ""}`,
+          ),
+        );
+        // Add new relationships that don't already exist
+        for (const rel of result.relationships) {
+          const relKey = `${rel.from}:${rel.to}:${rel.type}:${rel.context || ""}`;
+          if (!existingRelKeys.has(relKey)) {
+            existingResult.relationships.push(rel);
+          }
+        }
+      } else {
+        // New file from reverse analysis
         allResults.set(path, result);
       }
+    }
+
+    // Ensure target file is included (from either forward or reverse analysis)
+    if (!allResults.has(filePath)) {
+      // If target file wasn't in either result, analyze it now
+      const targetAnalysis = await this.analyzeFile(filePath, 0);
+      allResults.set(filePath, targetAnalysis);
     }
 
     // 4. Extract all classes (deduplicated)
