@@ -4,18 +4,19 @@
  */
 
 import * as vscode from "vscode";
-import { DiagramPanel } from "./views/diagram-panel.js";
+import { GenerateActivityDiagramCommand } from "./commands/generate-activity-diagram.js";
 import { GenerateClassDiagramCommand } from "./commands/generate-class-diagram.js";
 import { GenerateSequenceDiagramCommand } from "./commands/generate-sequence-diagram.js";
-import {
-  isSupportedLanguage,
-  getSupportedLanguagesList,
-} from "./utils/language-support.js";
-import { ParserService } from "./core/services/ParserService.js";
 import { JavaParser } from "./core/parsers/java/JavaParser.js";
 import { PythonParser } from "./core/parsers/python/PythonParser.js";
-import { TypeScriptParser } from "./core/parsers/typescript/TypeScriptParser.js";
 import { JavaScriptParser } from "./core/parsers/typescript/JavaScriptParser.js";
+import { TypeScriptParser } from "./core/parsers/typescript/TypeScriptParser.js";
+import { ParserService } from "./core/services/ParserService.js";
+import {
+  getSupportedLanguagesList,
+  isSupportedLanguage,
+} from "./utils/language-support.js";
+import { DiagramPanel } from "./views/diagram-panel.js";
 
 /**
  * Extension activation
@@ -70,6 +71,9 @@ export async function activate(
     ),
     vscode.commands.registerCommand("gooseUML.generateSequenceDiagram", () =>
       generateSequenceDiagram.execute(),
+    ),
+    vscode.commands.registerCommand("gooseUML.generateActivityDiagram", () =>
+      new GenerateActivityDiagramCommand(context).execute(),
     ),
   );
 

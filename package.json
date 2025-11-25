@@ -44,6 +44,11 @@
         "command": "gooseUML.generateSequenceDiagram",
         "title": "Generate Sequence Diagram",
         "category": "Goose UML"
+      },
+      {
+        "command": "gooseUML.generateActivityDiagram",
+        "title": "Generate Activity Diagram",
+        "category": "Goose UML"
       }
     ],
     "keybindings": [
@@ -77,6 +82,11 @@
           "when": "editorLangId == typescript || editorLangId == javascript || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == java || editorLangId == python",
           "command": "gooseUML.generateSequenceDiagram",
           "group": "gooseUML@2"
+        },
+        {
+          "when": "editorLangId == typescript || editorLangId == javascript || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == java || editorLangId == python",
+          "command": "gooseUML.generateActivityDiagram",
+          "group": "gooseUML@3"
         }
       ]
     }
