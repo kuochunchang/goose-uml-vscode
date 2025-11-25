@@ -440,7 +440,7 @@ export class TypeScriptASTConverter {
     // Extract type
     let typeStr: string | undefined;
     // Try field "type" first (for property_signature)
-    let typeNode: SyntaxNode | null = node.childForFieldName("type");
+    const typeNode: SyntaxNode | null = node.childForFieldName("type");
 
     // If type field returns type_annotation (which includes the colon), extract the actual type from it
     if (typeNode && typeNode.type === "type_annotation") {
@@ -502,8 +502,8 @@ export class TypeScriptASTConverter {
     // Check if type is an array
     const isArray = typeStr
       ? typeStr.endsWith("[]") ||
-      typeStr.startsWith("Array<") ||
-      typeStr === "Array"
+        typeStr.startsWith("Array<") ||
+        typeStr === "Array"
       : false;
 
     // Check if type is a class type
@@ -530,7 +530,7 @@ export class TypeScriptASTConverter {
 
     // Extract type
     let paramType: string | undefined;
-    let typeNode = node.childForFieldName("type");
+    const typeNode = node.childForFieldName("type");
 
     // If type field returns type_annotation, extract the actual type from it
     if (typeNode && typeNode.type === "type_annotation") {

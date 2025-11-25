@@ -11,7 +11,7 @@ describe("ImportIndex + CrossFileAnalyzer Integration", () => {
   beforeEach(() => {
     // Register parsers for testing
     registerTestParsers();
-    
+
     fileProvider = new InMemoryFileProvider();
     importIndex = new ImportIndex(fileProvider);
   });

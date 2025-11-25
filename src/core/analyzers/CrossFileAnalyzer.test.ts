@@ -11,7 +11,7 @@ describe("CrossFileAnalyzer", () => {
   beforeEach(() => {
     // Register parsers for testing
     registerTestParsers();
-    
+
     fileProvider = new InMemoryFileProvider();
     analyzer = new CrossFileAnalyzer(fileProvider);
   });

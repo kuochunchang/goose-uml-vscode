@@ -15,34 +15,33 @@ import { PythonParser } from "../../parsers/python/PythonParser.js";
  */
 export function registerTestParsers(): void {
   const parserService = ParserService.getInstance();
-  
+
   // Clear any existing parsers (in case of test isolation issues)
   // Note: ParserService is a singleton, so we need to handle this carefully
   // For now, we'll just register parsers - if they're already registered,
   // the registry will throw an error, which we'll catch and ignore
-  
+
   try {
     parserService.registerParser(new TypeScriptParser());
-  } catch (error) {
+  } catch {
     // Parser already registered, ignore
   }
-  
+
   try {
     parserService.registerParser(new JavaScriptParser());
-  } catch (error) {
+  } catch {
     // Parser already registered, ignore
   }
-  
+
   try {
     parserService.registerParser(new JavaParser());
-  } catch (error) {
+  } catch {
     // Parser already registered, ignore
   }
-  
+
   try {
     parserService.registerParser(new PythonParser());
-  } catch (error) {
+  } catch {
     // Parser already registered, ignore
   }
 }
-

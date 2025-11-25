@@ -4,6 +4,7 @@
  */
 
 import Parser from "tree-sitter";
+import type { SyntaxNode } from "tree-sitter";
 import Python from "tree-sitter-python";
 import type { ILanguageParser } from "../common/ILanguageParser.js";
 import type { UnifiedAST, SupportedLanguage } from "../../types/index.js";
@@ -32,7 +33,7 @@ export class PythonParser implements ILanguageParser {
   async parse(code: string, filePath: string): Promise<UnifiedAST> {
     try {
       const tree = this.parser.parse(code);
-      
+
       // Check for parse errors (tree-sitter doesn't throw on syntax errors)
       // Check if root node has ERROR type or contains ERROR nodes
       if (this.hasParseErrors(tree.rootNode)) {
@@ -40,7 +41,7 @@ export class PythonParser implements ILanguageParser {
           `Failed to parse Python code in ${filePath}: Syntax errors detected`,
         );
       }
-      
+
       return this.converter.convert(tree.rootNode, filePath, tree);
     } catch (error) {
       throw new Error(
@@ -52,11 +53,11 @@ export class PythonParser implements ILanguageParser {
   /**
    * Check if a node or its children contain parse errors
    */
-  private hasParseErrors(node: any): boolean {
+  private hasParseErrors(node: SyntaxNode): boolean {
     if (node.type === "ERROR" || node.type === "MISSING") {
       return true;
     }
-    
+
     // Check children recursively
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i);
@@ -64,7 +65,7 @@ export class PythonParser implements ILanguageParser {
         return true;
       }
     }
-    
+
     return false;
   }
 
