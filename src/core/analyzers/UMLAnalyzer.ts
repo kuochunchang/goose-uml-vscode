@@ -242,6 +242,8 @@ export class UMLAnalyzer {
             allClasses.push(cls);
           }
         }
+        // In forward mode, show all relationships in the dependency chain
+        // (e.g., if chain is 3-->4-->5, show both 3-->4 and 4-->5)
         for (const rel of result.relationships) {
           const key = `${rel.from}:${rel.to}:${rel.type}:${rel.context || ""}`;
           if (!relationshipSet.has(key)) {
@@ -307,7 +309,44 @@ export class UMLAnalyzer {
         }
       }
 
+      // In reverse mode: first build the reverse dependency chain
+      // to determine which classes should be displayed
+      const targetClassNames = new Set(
+        targetFileClasses.map((cls) => cls.name),
+      );
+
+      // Build a set of all classes that are part of the reverse dependency chain
+      // (classes that eventually point to target classes)
+      // IMPORTANT: Exclude relationships from target file when building the chain
+      // to avoid including forward dependencies (e.g., Layer4 --> Layer5)
+      const chainClassNames = new Set<string>(targetClassNames);
+      let changed = true;
+      // Iteratively find all classes that point to classes in the chain
+      // This builds the complete reverse dependency chain (e.g., 1-->2-->3 if target is 3)
+      while (changed) {
+        changed = false;
+        for (const [path, result] of reverseResults.entries()) {
+          // Skip target file when building the chain (its relationships are forward deps)
+          if (path === filePath) {
+            continue;
+          }
+          for (const rel of result.relationships) {
+            // If 'to' is in the chain, add 'from' to the chain
+            // Also ensure 'from' is not a target class (to avoid forward deps)
+            if (
+              chainClassNames.has(rel.to) &&
+              !chainClassNames.has(rel.from) &&
+              !targetClassNames.has(rel.from)
+            ) {
+              chainClassNames.add(rel.from);
+              changed = true;
+            }
+          }
+        }
+      }
+
       // Process classes in depth order (0, 1, 2, ... n-1)
+      // In reverse mode, only include classes that are in the reverse dependency chain
       const otherClasses: ClassInfo[] = [];
       const sortedDepths = Array.from(depthMap.keys()).sort((a, b) => a - b);
 
@@ -320,6 +359,11 @@ export class UMLAnalyzer {
           }
 
           for (const cls of result.classes) {
+            // In reverse mode, only include classes that are in the reverse dependency chain
+            if (mode === "reverse" && !chainClassNames.has(cls.name)) {
+              continue; // Skip classes not in the reverse dependency chain
+            }
+
             const key = `${result.filePath}:${cls.name}`;
             if (!classSet.has(key)) {
               classSet.add(key);
@@ -330,8 +374,32 @@ export class UMLAnalyzer {
       }
 
       // Add relationships (after classes are organized)
-      for (const [, result] of reverseResults.entries()) {
+      // In reverse mode, show all relationships in the reverse dependency chain
+      // This ensures we show the complete reverse dependency chain (e.g., 1-->2-->3)
+      // Exclude relationships where 'from' is a target class (those are forward dependencies)
+      // Also exclude relationships from the target file itself
+      for (const [path, result] of reverseResults.entries()) {
+        // In reverse mode, skip all relationships from the target file
+        // (these are forward dependencies, not reverse)
+        if (mode === "reverse" && path === filePath) {
+          continue; // Skip all relationships from target file
+        }
+
         for (const rel of result.relationships) {
+          // In reverse mode:
+          // 1. Only show relationships where 'to' is in the chain (leads to target)
+          // 2. Exclude relationships where 'from' is a target class (those are forward deps)
+          if (mode === "reverse") {
+            // Skip if 'to' is not in the chain (doesn't lead to target)
+            if (!chainClassNames.has(rel.to)) {
+              continue;
+            }
+            // Skip if 'from' is a target class (this is a forward dependency, not reverse)
+            if (targetClassNames.has(rel.from)) {
+              continue;
+            }
+          }
+
           const key = `${rel.from}:${rel.to}:${rel.type}:${rel.context || ""}`;
           if (!relationshipSet.has(key)) {
             relationshipSet.add(key);
@@ -1185,13 +1253,11 @@ export class UMLAnalyzer {
 
       internalDeps.forEach((dep) => {
         const { type, cardinality, context } = dep;
-        let { from, to } = dep;
+        const { from, to } = dep;
 
-        // In reverse mode, swap from/to to reverse arrow direction
-        // This makes the target file (most depended upon) appear at the bottom
-        if (mode === "reverse") {
-          [from, to] = [to, from];
-        }
+        // In reverse mode, relationships already point TO target classes
+        // (filtered in generateCrossFileClassDiagram), so we don't need to swap
+        // The arrow direction should remain: from -> to (showing what depends on target)
 
         // Generate Mermaid syntax based on relationship type
         switch (type) {
