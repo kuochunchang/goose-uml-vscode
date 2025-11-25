@@ -6,9 +6,6 @@ import type {
   SequenceInfo,
   DependencyInfo as ASTDependencyInfo,
   ClassInfo,
-  PropertyInfo,
-  MethodInfo,
-  ParameterInfo,
   UnifiedAST,
   ImportInfo,
   FileAnalysisResult,
@@ -17,11 +14,6 @@ import type {
 import { MermaidValidator } from "../utils/mermaidValidator.js";
 import { LanguageDetector } from "../parsers/common/index.js";
 import { OOAnalyzer } from "./OOAnalyzer.js";
-import type {
-  SequenceParticipant,
-  SequenceInteraction,
-} from "./SequenceAnalyzer.js";
-// Note: SequenceAnalyzer is no longer used, but types are still needed
 import { UnifiedSequenceAnalyzer } from "./UnifiedSequenceAnalyzer.js";
 import { CrossFileAnalyzer } from "./CrossFileAnalyzer.js";
 import { ParserService } from "../services/ParserService.js";
@@ -517,15 +509,9 @@ export class UMLAnalyzer {
         // Get relative file name for annotation
         const fileName = file.split("/").pop() || file;
 
-        let analysis: {
-          participants: SequenceParticipant[];
-          interactions: SequenceInteraction[];
-          entryPoints: string[];
-        };
-
         // Use UnifiedSequenceAnalyzer for all languages (UnifiedAST)
         const unifiedSequenceAnalyzer = new UnifiedSequenceAnalyzer();
-        analysis = unifiedSequenceAnalyzer.analyze(ast);
+        const analysis = unifiedSequenceAnalyzer.analyze(ast);
 
         // Add participants with source file annotation
         for (const participant of analysis.participants) {
@@ -643,10 +629,7 @@ export class UMLAnalyzer {
    * Parse code to AST (supports multiple languages)
    * Uses unified parser system for all languages (TypeScript, JavaScript, Java, Python)
    */
-  private async parseCode(
-    code: string,
-    filePath: string,
-  ): Promise<UnifiedAST> {
+  private async parseCode(code: string, filePath: string): Promise<UnifiedAST> {
     // Normalize file path (handle file:// URIs from VS Code)
     let normalizedPath = filePath;
     if (filePath.startsWith("file://")) {
@@ -718,20 +701,20 @@ export class UMLAnalyzer {
     // Convert interfaces to ClassInfo format (interfaces have extends as string[])
     // Preserve type: 'interface' to maintain correct UML representation
     for (const iface of ast.interfaces) {
-        classes.push({
-          ...iface,
-          // Keep original type: 'interface' instead of overwriting with 'class'
-          extends:
-            iface.extends && iface.extends.length > 0
-              ? iface.extends[0]
-              : undefined,
-          implements:
-            iface.extends && iface.extends.length > 1
-              ? iface.extends.slice(1)
-              : undefined,
-        });
-      }
-      imports = ast.imports;
+      classes.push({
+        ...iface,
+        // Keep original type: 'interface' instead of overwriting with 'class'
+        extends:
+          iface.extends && iface.extends.length > 0
+            ? iface.extends[0]
+            : undefined,
+        implements:
+          iface.extends && iface.extends.length > 1
+            ? iface.extends.slice(1)
+            : undefined,
+      });
+    }
+    imports = ast.imports;
 
     // Analyze OO relationships (composition, aggregation, dependency, etc.)
     const ooAnalysis = ooAnalyzer.analyze(classes, imports);
@@ -753,8 +736,6 @@ export class UMLAnalyzer {
       },
     };
   }
-
-
 
   /**
    * Check if a type name represents a class (not a primitive type)
@@ -989,7 +970,6 @@ export class UMLAnalyzer {
   private sanitizeLabelForMermaid(label: string): string {
     return label.replace(/<<|>>/g, "").replace(/["']/g, "").trim();
   }
-
 
   /**
    * Generate sequence diagram from UnifiedAST (Java/Python)

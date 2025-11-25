@@ -6,15 +6,15 @@
 import type { SyntaxNode } from "tree-sitter";
 import Parser from "tree-sitter";
 import type {
-  UnifiedAST,
-  ClassInfo,
-  InterfaceInfo,
-  FunctionInfo,
-  ImportInfo,
-  ExportInfo,
-  PropertyInfo,
-  MethodInfo,
-  ParameterInfo,
+    ClassInfo,
+    ExportInfo,
+    FunctionInfo,
+    ImportInfo,
+    InterfaceInfo,
+    MethodInfo,
+    ParameterInfo,
+    PropertyInfo,
+    UnifiedAST,
 } from "../../types/index.js";
 
 /**
@@ -150,7 +150,10 @@ export class TypeScriptASTConverter {
     const implementsNode = node.childForFieldName("implements");
     if (implementsNode) {
       for (const child of implementsNode.children) {
-        if (child.type === "type_identifier" || child.type === "nested_type_identifier") {
+        if (
+          child.type === "type_identifier" ||
+          child.type === "nested_type_identifier"
+        ) {
           const typeName = this.extractTypeName(child);
           if (typeName) {
             implementsInterfaces.push(typeName);
@@ -163,10 +166,16 @@ export class TypeScriptASTConverter {
     const bodyNode = node.childForFieldName("body");
     if (bodyNode) {
       for (const member of bodyNode.children) {
-        if (member.type === "property_signature" || member.type === "public_field_definition") {
+        if (
+          member.type === "property_signature" ||
+          member.type === "public_field_definition"
+        ) {
           const prop = this.extractProperty(member);
           if (prop) properties.push(prop);
-        } else if (member.type === "method_definition" || member.type === "method_signature") {
+        } else if (
+          member.type === "method_definition" ||
+          member.type === "method_signature"
+        ) {
           const method = this.extractMethod(member);
           if (method) {
             methods.push(method);
@@ -220,7 +229,10 @@ export class TypeScriptASTConverter {
     const extendsNode = node.childForFieldName("extends");
     if (extendsNode) {
       for (const child of extendsNode.children) {
-        if (child.type === "type_identifier" || child.type === "nested_type_identifier") {
+        if (
+          child.type === "type_identifier" ||
+          child.type === "nested_type_identifier"
+        ) {
           const typeName = this.extractTypeName(child);
           if (typeName) {
             extendsInterfaces.push(typeName);
@@ -279,7 +291,10 @@ export class TypeScriptASTConverter {
     const parametersNode = node.childForFieldName("parameters");
     if (parametersNode) {
       for (const param of parametersNode.children) {
-        if (param.type === "required_parameter" || param.type === "optional_parameter") {
+        if (
+          param.type === "required_parameter" ||
+          param.type === "optional_parameter"
+        ) {
           const paramInfo = this.extractParameter(param);
           if (paramInfo) {
             parameters.push(paramInfo);
@@ -318,7 +333,10 @@ export class TypeScriptASTConverter {
     const parametersNode = node.childForFieldName("parameters");
     if (parametersNode) {
       for (const param of parametersNode.children) {
-        if (param.type === "required_parameter" || param.type === "optional_parameter") {
+        if (
+          param.type === "required_parameter" ||
+          param.type === "optional_parameter"
+        ) {
           const paramInfo = this.extractParameter(param);
           if (paramInfo) {
             parameters.push(paramInfo);
@@ -349,7 +367,10 @@ export class TypeScriptASTConverter {
     const parametersNode = node.childForFieldName("parameters");
     if (parametersNode) {
       for (const param of parametersNode.children) {
-        if (param.type === "required_parameter" || param.type === "optional_parameter") {
+        if (
+          param.type === "required_parameter" ||
+          param.type === "optional_parameter"
+        ) {
           const paramInfo = this.extractParameter(param);
           if (paramInfo) {
             parameters.push(paramInfo);
@@ -613,7 +634,10 @@ export class TypeScriptASTConverter {
         if (typeArguments) {
           const args: string[] = [];
           for (const arg of typeArguments.children) {
-            if (arg.type === "type_identifier" || arg.type === "predefined_type") {
+            if (
+              arg.type === "type_identifier" ||
+              arg.type === "predefined_type"
+            ) {
               const argType = this.extractTypeName(arg);
               if (argType) {
                 args.push(argType);
@@ -637,7 +661,10 @@ export class TypeScriptASTConverter {
       // Union type (e.g., string | number)
       const types: string[] = [];
       for (const child of node.children) {
-        if (child.type === "type_identifier" || child.type === "predefined_type") {
+        if (
+          child.type === "type_identifier" ||
+          child.type === "predefined_type"
+        ) {
           const typeName = this.extractTypeName(child);
           if (typeName) {
             types.push(typeName);
@@ -649,7 +676,10 @@ export class TypeScriptASTConverter {
       // Intersection type (e.g., A & B)
       const types: string[] = [];
       for (const child of node.children) {
-        if (child.type === "type_identifier" || child.type === "predefined_type") {
+        if (
+          child.type === "type_identifier" ||
+          child.type === "predefined_type"
+        ) {
           const typeName = this.extractTypeName(child);
           if (typeName) {
             types.push(typeName);
@@ -682,9 +712,7 @@ export class TypeScriptASTConverter {
   /**
    * Get visibility modifier from node
    */
-  private getVisibility(
-    node: SyntaxNode,
-  ): "public" | "protected" | "private" {
+  private getVisibility(node: SyntaxNode): "public" | "protected" | "private" {
     // Check for accessibility modifiers
     for (const child of node.children) {
       if (child.type === "accessibility_modifier") {
@@ -737,4 +765,3 @@ export class TypeScriptASTConverter {
     return "javascript";
   }
 }
-

@@ -10,13 +10,9 @@ import type {
   FileAnalysisResult,
   IFileProvider,
   ImportInfo,
-  MethodInfo,
-  ParameterInfo,
-  PropertyInfo,
   UnifiedAST,
 } from "../types/index.js";
 import { OOAnalyzer } from "./OOAnalyzer.js";
-
 
 /**
  * CrossFileAnalyzer - Platform-agnostic cross-file dependency analyzer
@@ -748,13 +744,13 @@ export class CrossFileAnalyzer {
    * Note: This method previously relied on cache. With cache removed, Python import resolution
    * is temporarily disabled until a better solution is implemented (e.g., using ImportIndex).
    */
-  private async findPythonClassViaImports(
+  private findPythonClassViaImports(
     _currentFilePath: string,
     _className: string,
   ): Promise<string | null> {
     // TODO: Re-implement Python import resolution without cache
     // Possible solution: Pass FileAnalysisResult as parameter instead of relying on cache
-    return null;
+    return Promise.resolve(null);
   }
 
   /**
