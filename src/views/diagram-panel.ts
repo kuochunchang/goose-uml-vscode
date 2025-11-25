@@ -626,6 +626,9 @@ export class DiagramPanel {
       }
     </div>
 
+    <!-- Hidden element to store Mermaid code for copying -->
+    <div id="mermaid-code" style="display: none;">${this._mermaidCode}</div>
+
     <script type="module" nonce="${nonce}">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 
@@ -815,7 +818,7 @@ export class DiagramPanel {
         });
 
         document.getElementById('copyBtn').addEventListener('click', () => {
-            const mermaidCode = document.querySelector('.mermaid')?.textContent;
+            const mermaidCode = document.getElementById('mermaid-code')?.textContent;
             if (mermaidCode) {
                 navigator.clipboard.writeText(mermaidCode.trim()).then(() => {
                     vscode.postMessage({ type: 'info', text: 'Mermaid code copied to clipboard' });
