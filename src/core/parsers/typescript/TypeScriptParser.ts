@@ -1,23 +1,28 @@
 /**
  * @code-review-goose/analysis-parser-typescript
- * TypeScript parser implementation using Babel
+ * TypeScript parser implementation using tree-sitter
  */
 
-import { parse } from "@babel/parser";
+import Parser from "tree-sitter";
+import TypeScript from "tree-sitter-typescript";
 import type { ILanguageParser } from "../common/ILanguageParser.js";
 import type { UnifiedAST, SupportedLanguage } from "../../types/index.js";
-import { BabelASTConverter } from "./BabelASTConverter.js";
+import { TypeScriptASTConverter } from "./TypeScriptASTConverter.js";
 
 /**
- * TypeScript parser using Babel
+ * TypeScript parser using tree-sitter
  *
- * This parser wraps @babel/parser to provide a unified interface for parsing TypeScript code.
+ * This parser uses tree-sitter-typescript to parse TypeScript source code and convert it
+ * to a unified AST format compatible with the analysis engine.
  */
 export class TypeScriptParser implements ILanguageParser {
-  private converter: BabelASTConverter;
+  private parser: Parser;
+  private converter: TypeScriptASTConverter;
 
   constructor() {
-    this.converter = new BabelASTConverter();
+    this.parser = new Parser();
+    this.parser.setLanguage(TypeScript.typescript);
+    this.converter = new TypeScriptASTConverter();
   }
 
   /**
@@ -25,20 +30,8 @@ export class TypeScriptParser implements ILanguageParser {
    */
   async parse(code: string, filePath: string): Promise<UnifiedAST> {
     try {
-      const ast = parse(code, {
-        sourceType: "module",
-        plugins: [
-          "typescript",
-          "jsx",
-          "decorators-legacy",
-          "classProperties",
-          "classPrivateProperties",
-          "classPrivateMethods",
-        ],
-        sourceFilename: filePath,
-      });
-
-      return this.converter.convert(ast, filePath);
+      const tree = this.parser.parse(code);
+      return this.converter.convert(tree.rootNode, filePath, tree);
     } catch (error) {
       throw new Error(
         `Failed to parse TypeScript code in ${filePath}: ${(error as Error).message}`,

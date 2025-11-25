@@ -1,23 +1,29 @@
 /**
  * @code-review-goose/analysis-parser-typescript
- * JavaScript parser implementation using Babel
+ * JavaScript parser implementation using tree-sitter
  */
 
-import { parse } from "@babel/parser";
+import Parser from "tree-sitter";
+import TypeScript from "tree-sitter-typescript";
 import type { ILanguageParser } from "../common/ILanguageParser.js";
 import type { UnifiedAST, SupportedLanguage } from "../../types/index.js";
-import { BabelASTConverter } from "./BabelASTConverter.js";
+import { TypeScriptASTConverter } from "./TypeScriptASTConverter.js";
 
 /**
- * JavaScript parser using Babel
+ * JavaScript parser using tree-sitter
  *
- * This parser wraps @babel/parser to provide a unified interface for parsing JavaScript code.
+ * This parser uses tree-sitter-typescript (which supports JavaScript) to parse JavaScript
+ * source code and convert it to a unified AST format compatible with the analysis engine.
  */
 export class JavaScriptParser implements ILanguageParser {
-  private converter: BabelASTConverter;
+  private parser: Parser;
+  private converter: TypeScriptASTConverter;
 
   constructor() {
-    this.converter = new BabelASTConverter();
+    this.parser = new Parser();
+    // Use TypeScript language for JavaScript (TypeScript is a superset of JavaScript)
+    this.parser.setLanguage(TypeScript.typescript);
+    this.converter = new TypeScriptASTConverter();
   }
 
   /**
@@ -25,19 +31,8 @@ export class JavaScriptParser implements ILanguageParser {
    */
   async parse(code: string, filePath: string): Promise<UnifiedAST> {
     try {
-      const ast = parse(code, {
-        sourceType: "module",
-        plugins: [
-          "jsx",
-          "decorators-legacy",
-          "classProperties",
-          "classPrivateProperties",
-          "classPrivateMethods",
-        ],
-        sourceFilename: filePath,
-      });
-
-      return this.converter.convert(ast, filePath);
+      const tree = this.parser.parse(code);
+      return this.converter.convert(tree.rootNode, filePath, tree);
     } catch (error) {
       throw new Error(
         `Failed to parse JavaScript code in ${filePath}: ${(error as Error).message}`,

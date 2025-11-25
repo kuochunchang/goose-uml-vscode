@@ -1,6 +1,3 @@
-import { parse } from "@babel/parser";
-import traverseModule from "@babel/traverse";
-import * as t from "@babel/types";
 import type {
   IFileProvider,
   DiagramType,
@@ -20,17 +17,14 @@ import type {
 import { MermaidValidator } from "../utils/mermaidValidator.js";
 import { LanguageDetector } from "../parsers/common/index.js";
 import { OOAnalyzer } from "./OOAnalyzer.js";
-import {
-  SequenceAnalyzer,
-  type SequenceParticipant,
-  type SequenceInteraction,
+import type {
+  SequenceParticipant,
+  SequenceInteraction,
 } from "./SequenceAnalyzer.js";
+// Note: SequenceAnalyzer is no longer used, but types are still needed
 import { UnifiedSequenceAnalyzer } from "./UnifiedSequenceAnalyzer.js";
 import { CrossFileAnalyzer } from "./CrossFileAnalyzer.js";
 import { ParserService } from "../services/ParserService.js";
-
-// Correct way to import @babel/traverse
-const traverse = (traverseModule as any).default || traverseModule;
 
 // Simplified dependency information
 export interface DependencyInfo {
@@ -529,16 +523,9 @@ export class UMLAnalyzer {
           entryPoints: string[];
         };
 
-        // Support both Babel AST (TypeScript/JavaScript) and UnifiedAST (Java/Python)
-        if ("language" in ast) {
-          // UnifiedAST - use UnifiedSequenceAnalyzer
-          const unifiedSequenceAnalyzer = new UnifiedSequenceAnalyzer();
-          analysis = unifiedSequenceAnalyzer.analyze(ast as UnifiedAST);
-        } else {
-          // Babel AST - use SequenceAnalyzer
-          const sequenceAnalyzer = new SequenceAnalyzer();
-          analysis = sequenceAnalyzer.analyze(ast as t.File);
-        }
+        // Use UnifiedSequenceAnalyzer for all languages (UnifiedAST)
+        const unifiedSequenceAnalyzer = new UnifiedSequenceAnalyzer();
+        analysis = unifiedSequenceAnalyzer.analyze(ast);
 
         // Add participants with source file annotation
         for (const participant of analysis.participants) {
@@ -645,14 +632,8 @@ export class UMLAnalyzer {
     if (type === "class") {
       return this.generateClassDiagram(ast, code, filePath);
     } else if (type === "sequence") {
-      // Sequence diagrams support both Babel AST (TypeScript/JavaScript) and UnifiedAST (Java/Python)
-      if ("language" in ast) {
-        return this.generateSequenceDiagramFromUnifiedAST(
-          ast as UnifiedAST,
-          code,
-        );
-      }
-      return this.generateSequenceDiagram(ast as t.File, code);
+      // Sequence diagrams use UnifiedAST for all languages
+      return this.generateSequenceDiagramFromUnifiedAST(ast, code);
     }
 
     throw new Error(`Unsupported diagram type: ${type}`);
@@ -660,13 +641,12 @@ export class UMLAnalyzer {
 
   /**
    * Parse code to AST (supports multiple languages)
-   * For TypeScript/JavaScript, uses Babel parser (backward compatible)
-   * For Java/Python, uses unified parser system
+   * Uses unified parser system for all languages (TypeScript, JavaScript, Java, Python)
    */
   private async parseCode(
     code: string,
     filePath: string,
-  ): Promise<UnifiedAST | t.File> {
+  ): Promise<UnifiedAST> {
     // Normalize file path (handle file:// URIs from VS Code)
     let normalizedPath = filePath;
     if (filePath.startsWith("file://")) {
@@ -696,26 +676,7 @@ export class UMLAnalyzer {
       );
     }
 
-    // For TypeScript/JavaScript, use Babel parser (backward compatible)
-    if (language === "typescript" || language === "javascript") {
-      try {
-        return parse(code, {
-          sourceType: "module",
-          plugins: [
-            "typescript",
-            "jsx",
-            "decorators-legacy",
-            "classProperties",
-            "classPrivateProperties",
-            "classPrivateMethods",
-          ],
-        });
-      } catch (error) {
-        throw new Error(`Code parsing failed: ${(error as Error).message}`);
-      }
-    }
-
-    // For other languages (Java, Python), use unified parser
+    // Use unified parser for all languages
     if (language) {
       if (!this.parserService.canParse(normalizedPath)) {
         throw new Error(
@@ -741,10 +702,10 @@ export class UMLAnalyzer {
   }
 
   /**
-   * Generate class diagram (supports both Babel AST and UnifiedAST)
+   * Generate class diagram (supports UnifiedAST)
    */
   private generateClassDiagram(
-    ast: UnifiedAST | t.File,
+    ast: UnifiedAST,
     _code: string,
     _filePath: string,
   ): UMLResult {
@@ -752,14 +713,11 @@ export class UMLAnalyzer {
     const ooAnalyzer = new OOAnalyzer();
     let imports: ImportInfo[] = [];
 
-    // Check if it's UnifiedAST (from Java/Python parser) or Babel AST (from TS/JS parser)
-    if ("language" in ast && "classes" in ast) {
-      // UnifiedAST from Java/Python parser
-      const unifiedAST = ast as UnifiedAST;
-      classes.push(...unifiedAST.classes);
-      // Convert interfaces to ClassInfo format (interfaces have extends as string[])
-      // Preserve type: 'interface' to maintain correct UML representation
-      for (const iface of unifiedAST.interfaces) {
+    // UnifiedAST from all parsers (TypeScript, JavaScript, Java, Python)
+    classes.push(...ast.classes);
+    // Convert interfaces to ClassInfo format (interfaces have extends as string[])
+    // Preserve type: 'interface' to maintain correct UML representation
+    for (const iface of ast.interfaces) {
         classes.push({
           ...iface,
           // Keep original type: 'interface' instead of overwriting with 'class'
@@ -773,30 +731,7 @@ export class UMLAnalyzer {
               : undefined,
         });
       }
-      imports = unifiedAST.imports;
-    } else {
-      // Babel AST from TypeScript/JavaScript parser
-      const babelAST = ast as t.File;
-      imports = ooAnalyzer.extractImports(babelAST);
-
-      // Traverse AST to extract class information
-      traverse(babelAST, {
-        ClassDeclaration: (path: any) => {
-          const node = path.node;
-          const classInfo = this.extractClassInfo(node);
-          if (classInfo) {
-            classes.push(classInfo);
-          }
-        },
-        TSInterfaceDeclaration: (path: any) => {
-          const node = path.node;
-          const interfaceInfo = this.extractInterfaceInfo(node);
-          if (interfaceInfo) {
-            classes.push(interfaceInfo);
-          }
-        },
-      });
-    }
+      imports = ast.imports;
 
     // Analyze OO relationships (composition, aggregation, dependency, etc.)
     const ooAnalysis = ooAnalyzer.analyze(classes, imports);
@@ -819,306 +754,7 @@ export class UMLAnalyzer {
     };
   }
 
-  /**
-   * Extract class information
-   */
-  private extractClassInfo(node: t.ClassDeclaration): ClassInfo | null {
-    if (!node.id) return null;
 
-    const className = node.id.name;
-    const properties: PropertyInfo[] = [];
-    const methods: MethodInfo[] = [];
-    let constructorParams: ParameterInfo[] | undefined;
-
-    // Extract inheritance relationship
-    let extendsClass: string | undefined;
-    if (node.superClass && t.isIdentifier(node.superClass)) {
-      extendsClass = node.superClass.name;
-    }
-
-    // Extract implemented interfaces
-    const implementsInterfaces: string[] = [];
-    if (node.implements) {
-      node.implements.forEach((impl) => {
-        if (
-          t.isTSExpressionWithTypeArguments(impl) &&
-          t.isIdentifier(impl.expression)
-        ) {
-          implementsInterfaces.push(impl.expression.name);
-        }
-      });
-    }
-
-    // Traverse class members
-    node.body.body.forEach((member) => {
-      if (t.isClassProperty(member)) {
-        const prop = this.extractProperty(member);
-        if (prop) properties.push(prop);
-      } else if (t.isClassMethod(member)) {
-        const method = this.extractMethod(member);
-        if (method) methods.push(method);
-        // Extract constructor parameters for dependency injection analysis
-        if (method && method.name === "constructor") {
-          constructorParams = method.parameters;
-        }
-      }
-    });
-
-    return {
-      name: className,
-      type: "class",
-      properties,
-      methods,
-      extends: extendsClass,
-      implements:
-        implementsInterfaces.length > 0 ? implementsInterfaces : undefined,
-      lineNumber: node.loc?.start.line,
-      constructorParams,
-    };
-  }
-
-  /**
-   * Extract interface information
-   */
-  private extractInterfaceInfo(node: t.TSInterfaceDeclaration): ClassInfo {
-    const interfaceName = node.id.name;
-    const properties: PropertyInfo[] = [];
-    const methods: MethodInfo[] = [];
-
-    // Extract extended interfaces
-    const extendsInterfaces: string[] = [];
-    if (node.extends) {
-      node.extends.forEach((ext) => {
-        if (t.isIdentifier(ext.expression)) {
-          extendsInterfaces.push(ext.expression.name);
-        }
-      });
-    }
-
-    // Traverse interface members
-    node.body.body.forEach((member) => {
-      if (t.isTSPropertySignature(member)) {
-        if (t.isIdentifier(member.key)) {
-          properties.push({
-            name: member.key.name,
-            type: this.getTypeAnnotation(member.typeAnnotation),
-            visibility: "public",
-          });
-        }
-      } else if (t.isTSMethodSignature(member)) {
-        if (t.isIdentifier(member.key)) {
-          methods.push({
-            name: member.key.name,
-            parameters: this.extractParameters(member.parameters as any),
-            returnType: this.getTypeAnnotation(member.typeAnnotation),
-            visibility: "public",
-          });
-        }
-      }
-    });
-
-    return {
-      name: interfaceName,
-      type: "interface",
-      properties,
-      methods,
-      extends: extendsInterfaces.length > 0 ? extendsInterfaces[0] : undefined,
-    };
-  }
-
-  /**
-   * Extract property information
-   */
-  private extractProperty(node: t.ClassProperty): PropertyInfo | null {
-    if (!t.isIdentifier(node.key)) return null;
-
-    // First, try to get type from type annotation
-    let typeStr = this.getTypeAnnotation(node.typeAnnotation);
-
-    // If no type annotation, try to infer from initialization expression
-    if (!typeStr && node.value) {
-      typeStr = this.inferTypeFromExpression(node.value);
-    }
-
-    const isArray = typeStr
-      ? typeStr.endsWith("[]") ||
-        typeStr.startsWith("Array<") ||
-        typeStr === "Array"
-      : false;
-    const isClassType = typeStr ? this.isClassTypeName(typeStr) : false;
-
-    return {
-      name: node.key.name,
-      type: typeStr,
-      visibility: this.getVisibility(node),
-      lineNumber: node.loc?.start.line,
-      isArray,
-      isClassType,
-    };
-  }
-
-  /**
-   * Infer type from initialization expression
-   * Example: new Engine() -> Engine
-   * Example: [new Wheel(), ...] -> Wheel[]
-   */
-  private inferTypeFromExpression(expr: t.Expression): string | undefined {
-    // new ClassName() -> ClassName
-    if (t.isNewExpression(expr) && t.isIdentifier(expr.callee)) {
-      return expr.callee.name;
-    }
-
-    // [item1, item2, ...] -> infer from first element
-    if (t.isArrayExpression(expr) && expr.elements.length > 0) {
-      const firstElement = expr.elements[0];
-      if (firstElement && !t.isSpreadElement(firstElement)) {
-        const elementType = this.inferTypeFromExpression(firstElement);
-        if (elementType) {
-          return `${elementType}[]`;
-        }
-      }
-      return "Array";
-    }
-
-    // Identifier reference
-    if (t.isIdentifier(expr)) {
-      return expr.name;
-    }
-
-    // String literal
-    if (t.isStringLiteral(expr)) {
-      return "string";
-    }
-
-    // Number literal
-    if (t.isNumericLiteral(expr)) {
-      return "number";
-    }
-
-    // Boolean literal
-    if (t.isBooleanLiteral(expr)) {
-      return "boolean";
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Extract method information
-   */
-  private extractMethod(node: t.ClassMethod): MethodInfo | null {
-    if (!t.isIdentifier(node.key)) return null;
-
-    return {
-      name: node.key.name,
-      parameters: this.extractParameters(node.params),
-      returnType: this.getTypeAnnotation(node.returnType),
-      visibility: this.getVisibility(node),
-      lineNumber: node.loc?.start.line,
-    };
-  }
-
-  /**
-   * Extract parameter information
-   */
-  private extractParameters(params: any[]): ParameterInfo[] {
-    return params.map((param) => {
-      if (t.isIdentifier(param)) {
-        return {
-          name: param.name,
-          type: this.getTypeAnnotation(param.typeAnnotation),
-        };
-      }
-      if (t.isTSParameterProperty(param)) {
-        const parameter = param.parameter;
-        if (t.isIdentifier(parameter)) {
-          return {
-            name: parameter.name,
-            type: this.getTypeAnnotation(parameter.typeAnnotation),
-          };
-        }
-      }
-      return { name: "unknown" };
-    });
-  }
-
-  /**
-   * Get type annotation from TypeScript type annotation node
-   */
-  private getTypeAnnotation(typeAnnotation: any): string | undefined {
-    if (!typeAnnotation) return undefined;
-
-    if (t.isTSTypeAnnotation(typeAnnotation)) {
-      return this.getTSTypeString(typeAnnotation.typeAnnotation);
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Get string representation of TypeScript type
-   */
-  private getTSTypeString(tsType: any): string | undefined {
-    if (!tsType) return undefined;
-
-    // Primitive types
-    if (t.isTSStringKeyword(tsType)) return "string";
-    if (t.isTSNumberKeyword(tsType)) return "number";
-    if (t.isTSBooleanKeyword(tsType)) return "boolean";
-    if (t.isTSVoidKeyword(tsType)) return "void";
-    if (t.isTSAnyKeyword(tsType)) return "any";
-    if (t.isTSNullKeyword(tsType)) return "null";
-    if (t.isTSUndefinedKeyword(tsType)) return "undefined";
-
-    // Type reference (e.g., Wheel, Engine, Array<T>)
-    if (t.isTSTypeReference(tsType) && t.isIdentifier(tsType.typeName)) {
-      const typeName = tsType.typeName.name;
-
-      // Handle generic types like Array<Wheel>
-      if (tsType.typeParameters && tsType.typeParameters.params.length > 0) {
-        const typeArgs = tsType.typeParameters.params
-          .map((param: any) => this.getTSTypeString(param))
-          .filter((arg: string | undefined) => arg !== undefined)
-          .join(", ");
-
-        if (typeArgs) {
-          return `${typeName}<${typeArgs}>`;
-        }
-      }
-
-      return typeName;
-    }
-
-    // Array type (e.g., Wheel[])
-    if (t.isTSArrayType(tsType)) {
-      const elementType = this.getTSTypeString(tsType.elementType);
-      return elementType ? `${elementType}[]` : "Array";
-    }
-
-    // Union type (e.g., string | null)
-    if (t.isTSUnionType(tsType)) {
-      const types = tsType.types
-        .map((type: any) => this.getTSTypeString(type))
-        .filter((t: string | undefined) => t !== undefined)
-        .join(" | ");
-      return types || undefined;
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Get visibility
-   */
-  private getVisibility(node: any): "public" | "private" | "protected" {
-    if (node.accessibility) {
-      return node.accessibility;
-    }
-    if (node.key && t.isPrivateName(node.key)) {
-      return "private";
-    }
-    return "public";
-  }
 
   /**
    * Check if a type name represents a class (not a primitive type)
@@ -1354,31 +990,6 @@ export class UMLAnalyzer {
     return label.replace(/<<|>>/g, "").replace(/["']/g, "").trim();
   }
 
-  /**
-   * Generate sequence diagram using AST analysis (Babel AST for TypeScript/JavaScript)
-   */
-  private generateSequenceDiagram(ast: t.File, _code: string): UMLResult {
-    const sequenceAnalyzer = new SequenceAnalyzer();
-    const analysis = sequenceAnalyzer.analyze(ast);
-
-    // Generate Mermaid sequence diagram syntax
-    const mermaidCode = this.generateMermaidSequenceDiagram(analysis);
-
-    // Extract metadata for backward compatibility
-    const sequences: SequenceInfo[] = this.convertToSequenceInfo(analysis);
-
-    return {
-      type: "sequence",
-      mermaidCode,
-      generationMode: "native",
-      metadata: {
-        sequences,
-        participants: analysis.participants,
-        interactions: analysis.interactions,
-        entryPoints: analysis.entryPoints,
-      },
-    };
-  }
 
   /**
    * Generate sequence diagram from UnifiedAST (Java/Python)

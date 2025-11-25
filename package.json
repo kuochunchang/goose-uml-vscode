@@ -93,9 +93,6 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@babel/parser": "^7.28.5",
-    "@babel/traverse": "^7.28.5",
-    "@babel/types": "^7.28.5",
     "@code-review-goose/analysis-types": "file:../../code-review-goose/packages/analysis-types",
     "tree-sitter": "^0.21.0",
     "tree-sitter-java": "^0.21.0",
@@ -103,7 +100,6 @@
     "tree-sitter-typescript": "^0.21.0"
   },
   "devDependencies": {
-    "@types/babel__traverse": "^7.28.0",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^8.48.0",
