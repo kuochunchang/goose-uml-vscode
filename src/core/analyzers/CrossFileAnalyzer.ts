@@ -128,98 +128,15 @@ export class CrossFileAnalyzer {
     const targetAnalysis = await this.analyzeFile(filePath, 0);
     results.set(filePath, targetAnalysis);
 
-    // 2. Find files that import the target file
-    const importers = await this.findFilesThatImport(filePath);
-
-    // 3. Analyze each importer and its forward dependencies recursively
-    // This creates a chain: importer's deps -> importer -> target file
-    for (const importerPath of importers) {
-      if (!this.visited.has(importerPath)) {
-        // Analyze importer and its forward dependencies (depth-1 to leave room for target)
-        await this.analyzeFileRecursive(
-          importerPath,
-          0,
-          Math.max(1, maxDepth - 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
-          results,
-        );
-
-        // 4. Create explicit dependency relationship from importer to target file
-        // Find classes in importer that import classes from target file
-        const importerAnalysis = results.get(importerPath);
-        if (importerAnalysis) {
-          // Get target file's exported classes
-          const targetExportedClasses = new Set(
-            targetAnalysis.classes.map((cls) => cls.name),
-          );
-          for (const exp of targetAnalysis.exports) {
-            if (exp.name) {
-              targetExportedClasses.add(exp.name);
-            }
-          }
-
-          // Check importer's imports to find which classes it imports from target
-          for (const imp of importerAnalysis.imports) {
-            for (const specifier of imp.specifiers) {
-              if (targetExportedClasses.has(specifier)) {
-                // For each class in importer, check if it uses the imported class
-                for (const importerClass of importerAnalysis.classes) {
-                  // Check if this class uses the imported class
-                  // Look in relationships, properties, and method parameters
-                  let usesTargetClass = false;
-
-                  // Check relationships
-                  usesTargetClass = importerAnalysis.relationships.some(
-                    (rel) => rel.to === specifier,
-                  );
-
-                  // Check properties
-                  if (!usesTargetClass) {
-                    usesTargetClass = importerClass.properties.some(
-                      (prop) => prop.type === specifier,
-                    );
-                  }
-
-                  // Check method parameters and return types
-                  if (!usesTargetClass) {
-                    usesTargetClass = importerClass.methods.some(
-                      (method) =>
-                        method.parameters.some(
-                          (param) => param.type === specifier,
-                        ) || method.returnType === specifier,
-                    );
-                  }
-
-                  // If the class uses the imported class, add dependency relationship
-                  if (usesTargetClass) {
-                    // Add dependency relationship: importer class -> target class
-                    const existingRel = importerAnalysis.relationships.find(
-                      (rel) =>
-                        rel.from === importerClass.name &&
-                        rel.to === specifier &&
-                        rel.type === "dependency",
-                    );
-
-                    if (!existingRel) {
-                      importerAnalysis.relationships.push({
-                        from: importerClass.name,
-                        to: specifier,
-                        type: "dependency",
-                        lineNumber: imp.lineNumber,
-                        context: `imports from ${path.basename(filePath)}`,
-                      });
-                    }
-                  }
-                }
-
-                // If no specific class uses it, but the file imports it,
-                // create a relationship from the first class in importer (or create a file-level relationship)
-                // For simplicity, we'll skip this case as it's less meaningful
-              }
-            }
-          }
-        }
-      }
-    }
+    // 2. Recursively find all files that import the target file or any file in the chain
+    // This creates a chain: Layer1 -> Layer2 -> Layer3 -> Layer4 (target)
+    await this.analyzeReverseRecursive(
+      filePath,
+      0,
+      maxDepth,
+      results,
+      targetAnalysis,
+    );
 
     // 5. Adjust depths in reverse mode: target file should be at maximum depth
     // In reverse analysis, the target file is the deepest (most depended upon)
@@ -237,6 +154,115 @@ export class CrossFileAnalyzer {
     }
 
     return results;
+  }
+
+  /**
+   * Recursively analyze reverse dependencies
+   * Finds all files that import the target file or any file in the reverse chain
+   */
+  private async analyzeReverseRecursive(
+    targetFilePath: string,
+    currentDepth: number,
+    maxDepth: number,
+    results: Map<string, FileAnalysisResult>,
+    targetAnalysis: FileAnalysisResult,
+  ): Promise<void> {
+    // Stop recursion if max depth reached
+    if (currentDepth >= maxDepth) {
+      return;
+    }
+
+    // Find files that import the target file
+    const importers = await this.findFilesThatImport(targetFilePath);
+
+    for (const importerPath of importers) {
+      // Skip if already visited (avoid circular dependencies)
+      if (this.visited.has(importerPath)) {
+        continue;
+      }
+
+      // Mark as visited
+      this.visited.add(importerPath);
+
+      // Analyze the importer file
+      const importerAnalysis = await this.analyzeFile(importerPath, currentDepth);
+      results.set(importerPath, importerAnalysis);
+
+      // Get target file's exported classes
+      const targetExportedClasses = new Set(
+        targetAnalysis.classes.map((cls) => cls.name),
+      );
+      for (const exp of targetAnalysis.exports) {
+        if (exp.name) {
+          targetExportedClasses.add(exp.name);
+        }
+      }
+
+      // Create explicit dependency relationship from importer to target file
+      for (const imp of importerAnalysis.imports) {
+        for (const specifier of imp.specifiers) {
+          if (targetExportedClasses.has(specifier)) {
+            // For each class in importer, check if it uses the imported class
+            for (const importerClass of importerAnalysis.classes) {
+              // Check if this class uses the imported class
+              let usesTargetClass = false;
+
+              // Check relationships
+              usesTargetClass = importerAnalysis.relationships.some(
+                (rel) => rel.to === specifier,
+              );
+
+              // Check properties
+              if (!usesTargetClass) {
+                usesTargetClass = importerClass.properties.some(
+                  (prop) => prop.type === specifier,
+                );
+              }
+
+              // Check method parameters and return types
+              if (!usesTargetClass) {
+                usesTargetClass = importerClass.methods.some(
+                  (method) =>
+                    method.parameters.some(
+                      (param) => param.type === specifier,
+                    ) || method.returnType === specifier,
+                );
+              }
+
+              // If the class uses the imported class, add dependency relationship
+              if (usesTargetClass) {
+                // Add dependency relationship: importer class -> target class
+                const existingRel = importerAnalysis.relationships.find(
+                  (rel) =>
+                    rel.from === importerClass.name &&
+                    rel.to === specifier &&
+                    rel.type === "dependency",
+                );
+
+                if (!existingRel) {
+                  importerAnalysis.relationships.push({
+                    from: importerClass.name,
+                    to: specifier,
+                    type: "dependency",
+                    lineNumber: imp.lineNumber,
+                    context: `imports from ${path.basename(targetFilePath)}`,
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Recursively find files that import this importer (to build the full chain)
+      await this.analyzeReverseRecursive(
+        importerPath,
+        currentDepth + 1,
+        maxDepth,
+        results,
+        importerAnalysis,
+      );
+    }
   }
 
   /**

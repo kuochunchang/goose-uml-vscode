@@ -572,8 +572,8 @@ export class DiagramPanel {
             <span class="toolbar-label tooltip">
                 Mode:
                 <span class="tooltiptext">
-                    Both: All dependencies (imports + reverse)<br>
-                    Imports: What this file imports<br>
+                    Bidirectional: All dependencies (forward + reverse)<br>
+                    Forward: What this file imports<br>
                     Reverse: What imports this file
                 </span>
             </span>
@@ -581,14 +581,14 @@ export class DiagramPanel {
                 <button class="btn tooltip ${this._currentOptions.mode === "bidirectional" ? "active" : ""}"
                         data-mode="bidirectional"
                         ${this._currentOptions.depth === 0 ? "disabled" : ""}>
-                    <i class="codicon codicon-arrow-both"></i> Both
-                    <span class="tooltiptext">Both: Show all dependencies (what this file imports + what imports this file)</span>
+                    <i class="codicon codicon-arrow-both"></i> Bidirectional
+                    <span class="tooltiptext">Bidirectional: Show all dependencies (what this file imports + what imports this file)</span>
                 </button>
                 <button class="btn tooltip ${this._currentOptions.mode === "forward" ? "active" : ""}"
                         data-mode="forward"
                         ${this._currentOptions.depth === 0 ? "disabled" : ""}>
-                    <i class="codicon codicon-arrow-right"></i> Imports
-                    <span class="tooltiptext">Imports: Show only what this file imports</span>
+                    <i class="codicon codicon-arrow-right"></i> Forward
+                    <span class="tooltiptext">Forward: Show only what this file imports</span>
                 </button>
                 <button class="btn tooltip ${this._currentOptions.mode === "reverse" ? "active" : ""}"
                         data-mode="reverse"
