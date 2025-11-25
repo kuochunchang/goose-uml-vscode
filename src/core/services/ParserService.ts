@@ -3,13 +3,13 @@
  * Unified parser service that manages all language parsers
  */
 
-import type { UnifiedAST, SupportedLanguage } from '../types/index.js';
-import type { ILanguageParser } from '../parsers/common/index.js';
-import { ParserRegistry, LanguageDetector } from '../parsers/common/index.js';
+import type { UnifiedAST, SupportedLanguage } from "../types/index.js";
+import type { ILanguageParser } from "../parsers/common/index.js";
+import { ParserRegistry, LanguageDetector } from "../parsers/common/index.js";
 
 /**
  * Unified parser service for multi-language support
- * 
+ *
  * This service manages all language parsers and provides a unified interface
  * for parsing code in different languages.
  */
@@ -33,7 +33,7 @@ export class ParserService {
 
   /**
    * Register a language parser
-   * 
+   *
    * @param parser - The parser instance to register
    */
   registerParser(parser: ILanguageParser): void {
@@ -42,7 +42,7 @@ export class ParserService {
 
   /**
    * Parse code using the appropriate parser based on file path
-   * 
+   *
    * @param code - Source code to parse
    * @param filePath - File path (used for language detection)
    * @returns UnifiedAST representation of the code
@@ -66,7 +66,7 @@ export class ParserService {
 
   /**
    * Check if a file can be parsed
-   * 
+   *
    * @param filePath - File path to check
    * @returns true if a parser is available for this file
    */
@@ -81,7 +81,7 @@ export class ParserService {
 
   /**
    * Get the detected language for a file path
-   * 
+   *
    * @param filePath - File path
    * @returns Detected language or null if unsupported
    */
@@ -91,27 +91,31 @@ export class ParserService {
 
   /**
    * Get parser for a specific language
-   * 
+   *
    * @param language - Language to get parser for
    * @returns Parser instance or undefined if not available
    */
-  async getParser(language: SupportedLanguage): Promise<ILanguageParser | undefined> {
+  async getParser(
+    language: SupportedLanguage,
+  ): Promise<ILanguageParser | undefined> {
     return await this.registry.getParser(language);
   }
 
   /**
    * Get parser for a file path
-   * 
+   *
    * @param filePath - File path
    * @returns Parser instance or undefined if not available
    */
-  async getParserForFile(filePath: string): Promise<ILanguageParser | undefined> {
+  async getParserForFile(
+    filePath: string,
+  ): Promise<ILanguageParser | undefined> {
     return await this.registry.getParserForFile(filePath);
   }
 
   /**
    * Get list of supported languages
-   * 
+   *
    * @returns Array of supported language identifiers
    */
   getSupportedLanguages(): SupportedLanguage[] {

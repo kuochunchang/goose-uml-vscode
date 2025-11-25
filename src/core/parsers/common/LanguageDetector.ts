@@ -3,16 +3,16 @@
  * Language detection utilities
  */
 
-import type { SupportedLanguage } from '../../types/index.js';
+import type { SupportedLanguage } from "../../types/index.js";
 
 /**
  * Language detector - detects programming language from file path
- * 
+ *
  * @example
  * ```typescript
  * const language = LanguageDetector.detectFromFilePath('src/App.tsx');
  * // Returns: 'typescript'
- * 
+ *
  * const isSupported = LanguageDetector.isSupported('example.java');
  * // Returns: true
  * ```
@@ -23,35 +23,35 @@ export class LanguageDetector {
    */
   private static readonly EXTENSION_MAP: Record<string, SupportedLanguage> = {
     // TypeScript
-    '.ts': 'typescript',
-    '.tsx': 'typescript',
-    '.mts': 'typescript',
-    '.cts': 'typescript',
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".mts": "typescript",
+    ".cts": "typescript",
 
     // JavaScript
-    '.js': 'javascript',
-    '.jsx': 'javascript',
-    '.mjs': 'javascript',
-    '.cjs': 'javascript',
+    ".js": "javascript",
+    ".jsx": "javascript",
+    ".mjs": "javascript",
+    ".cjs": "javascript",
 
     // Java
-    '.java': 'java',
+    ".java": "java",
 
     // Python
-    '.py': 'python',
-    '.pyi': 'python',
-    '.pyw': 'python',
+    ".py": "python",
+    ".pyi": "python",
+    ".pyw": "python",
 
     // Go
-    '.go': 'go',
+    ".go": "go",
   };
 
   /**
    * Detect language from file path
-   * 
+   *
    * @param filePath - File path (can be absolute or relative)
    * @returns Detected language or null if unsupported
-   * 
+   *
    * @example
    * ```typescript
    * LanguageDetector.detectFromFilePath('/path/to/file.ts')  // 'typescript'
@@ -63,35 +63,35 @@ export class LanguageDetector {
   static detectFromFilePath(filePath: string): SupportedLanguage | null {
     // Handle file:// URI format from VS Code
     let normalizedPath = filePath;
-    if (filePath.startsWith('file://')) {
+    if (filePath.startsWith("file://")) {
       try {
         const url = new URL(filePath);
         normalizedPath = url.pathname;
         // On Windows, remove leading slash from pathname (e.g., /C:/path -> C:/path)
-        if (process.platform === 'win32' && normalizedPath.match(/^\/[A-Z]:/)) {
+        if (process.platform === "win32" && normalizedPath.match(/^\/[A-Z]:/)) {
           normalizedPath = normalizedPath.substring(1);
         }
       } catch {
         // If URL parsing fails, try simple string replacement
-        normalizedPath = filePath.replace(/^file:\/\//, '');
+        normalizedPath = filePath.replace(/^file:\/\//, "");
       }
     }
-    
+
     const ext = this.extractExtension(normalizedPath);
     return ext ? this.EXTENSION_MAP[ext] || null : null;
   }
 
   /**
    * Get all supported file extensions for a language
-   * 
+   *
    * @param language - Language identifier
    * @returns Array of file extensions (with leading dot)
-   * 
+   *
    * @example
    * ```typescript
    * LanguageDetector.getExtensions('typescript')
    * // Returns: ['.ts', '.tsx', '.mts', '.cts']
-   * 
+   *
    * LanguageDetector.getExtensions('python')
    * // Returns: ['.py', '.pyi', '.pyw']
    * ```
@@ -104,10 +104,10 @@ export class LanguageDetector {
 
   /**
    * Check if a file path is supported
-   * 
+   *
    * @param filePath - File path to check
    * @returns true if language is supported
-   * 
+   *
    * @example
    * ```typescript
    * LanguageDetector.isSupported('example.ts')   // true
@@ -121,9 +121,9 @@ export class LanguageDetector {
 
   /**
    * Get all supported languages
-   * 
+   *
    * @returns Array of supported language identifiers
-   * 
+   *
    * @example
    * ```typescript
    * LanguageDetector.getSupportedLanguages()
@@ -137,7 +137,7 @@ export class LanguageDetector {
 
   /**
    * Get extension map for testing or inspection
-   * 
+   *
    * @returns Copy of the extension map
    * @internal
    */
@@ -147,7 +147,7 @@ export class LanguageDetector {
 
   /**
    * Extract file extension from path
-   * 
+   *
    * @param filePath - File path
    * @returns File extension (lowercase, with leading dot) or null
    * @private
@@ -159,10 +159,10 @@ export class LanguageDetector {
 
   /**
    * Detect language from file content (heuristic-based)
-   * 
+   *
    * This is a fallback method when file extension is ambiguous or missing.
    * Currently not implemented - returns null.
-   * 
+   *
    * @param content - File content
    * @returns Detected language or null
    * @experimental

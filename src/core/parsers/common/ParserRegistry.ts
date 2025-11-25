@@ -3,31 +3,31 @@
  * Parser registry for managing multiple language parsers
  */
 
-import type { SupportedLanguage } from '../../types/index.js';
-import type { ILanguageParser, ParserFactory } from './ILanguageParser.js';
-import { LanguageDetector } from './LanguageDetector.js';
+import type { SupportedLanguage } from "../../types/index.js";
+import type { ILanguageParser, ParserFactory } from "./ILanguageParser.js";
+import { LanguageDetector } from "./LanguageDetector.js";
 
 /**
  * Parser registry - manages language parsers and provides unified access
- * 
+ *
  * The registry supports both eager and lazy parser registration:
  * - Eager: Parser instance is provided directly
  * - Lazy: Parser factory function is provided for on-demand initialization
- * 
+ *
  * @example
  * ```typescript
  * const registry = new ParserRegistry();
- * 
+ *
  * // Eager registration
  * registry.register(new TypeScriptParser());
  * registry.register(new JavaParser());
- * 
+ *
  * // Lazy registration (parser created on first use)
  * registry.registerLazy('python', () => new PythonParser());
- * 
+ *
  * // Get parser by language
  * const tsParser = registry.getParser('typescript');
- * 
+ *
  * // Auto-detect language and get parser
  * const parser = await registry.getParserForFile('src/App.tsx');
  * const ast = await parser.parse(code, 'src/App.tsx');
@@ -51,10 +51,10 @@ export class ParserRegistry {
 
   /**
    * Register a language parser (eager initialization)
-   * 
+   *
    * @param parser - Parser instance
    * @throws {Error} If parser for the language is already registered
-   * 
+   *
    * @example
    * ```typescript
    * const registry = new ParserRegistry();
@@ -65,7 +65,9 @@ export class ParserRegistry {
     const language = parser.getSupportedLanguage();
 
     if (this.parsers.has(language) || this.parserFactories.has(language)) {
-      throw new Error(`Parser for language '${language}' is already registered`);
+      throw new Error(
+        `Parser for language '${language}' is already registered`,
+      );
     }
 
     this.parsers.set(language, parser);
@@ -73,14 +75,14 @@ export class ParserRegistry {
 
   /**
    * Register a language parser factory (lazy initialization)
-   * 
+   *
    * The parser will be created on first use, which can improve startup time
    * for applications that don't use all registered parsers.
-   * 
+   *
    * @param language - Language identifier
    * @param factory - Factory function that creates the parser
    * @throws {Error} If parser for the language is already registered
-   * 
+   *
    * @example
    * ```typescript
    * registry.registerLazy('java', () => new JavaParser());
@@ -92,7 +94,9 @@ export class ParserRegistry {
    */
   registerLazy(language: SupportedLanguage, factory: ParserFactory): void {
     if (this.parsers.has(language) || this.parserFactories.has(language)) {
-      throw new Error(`Parser for language '${language}' is already registered`);
+      throw new Error(
+        `Parser for language '${language}' is already registered`,
+      );
     }
 
     this.parserFactories.set(language, factory);
@@ -100,12 +104,12 @@ export class ParserRegistry {
 
   /**
    * Get parser for a specific language
-   * 
+   *
    * For lazy-registered parsers, this will trigger initialization on first call.
-   * 
+   *
    * @param language - Language identifier
    * @returns Parser instance or undefined if not registered
-   * 
+   *
    * @example
    * ```typescript
    * const parser = await registry.getParser('typescript');
@@ -114,7 +118,9 @@ export class ParserRegistry {
    * }
    * ```
    */
-  async getParser(language: SupportedLanguage): Promise<ILanguageParser | undefined> {
+  async getParser(
+    language: SupportedLanguage,
+  ): Promise<ILanguageParser | undefined> {
     // Check eager-registered parsers first
     if (this.parsers.has(language)) {
       return this.parsers.get(language);
@@ -134,7 +140,7 @@ export class ParserRegistry {
       // Verify parser supports the expected language
       if (parser.getSupportedLanguage() !== language) {
         throw new Error(
-          `Parser factory for '${language}' returned parser for '${parser.getSupportedLanguage()}'`
+          `Parser factory for '${language}' returned parser for '${parser.getSupportedLanguage()}'`,
         );
       }
 
@@ -148,11 +154,11 @@ export class ParserRegistry {
 
   /**
    * Auto-detect language from file path and get appropriate parser
-   * 
+   *
    * @param filePath - File path (absolute or relative)
    * @returns Parser instance or undefined if language is not supported
    * @throws {Error} If language is detected but parser is not registered
-   * 
+   *
    * @example
    * ```typescript
    * const parser = await registry.getParserForFile('src/Main.java');
@@ -161,7 +167,9 @@ export class ParserRegistry {
    * }
    * ```
    */
-  async getParserForFile(filePath: string): Promise<ILanguageParser | undefined> {
+  async getParserForFile(
+    filePath: string,
+  ): Promise<ILanguageParser | undefined> {
     const language = LanguageDetector.detectFromFilePath(filePath);
 
     if (!language) {
@@ -173,7 +181,7 @@ export class ParserRegistry {
     if (!parser) {
       throw new Error(
         `Language '${language}' detected for file '${filePath}' but no parser is registered. ` +
-          `Please register a parser for '${language}'.`
+          `Please register a parser for '${language}'.`,
       );
     }
 
@@ -182,10 +190,10 @@ export class ParserRegistry {
 
   /**
    * Check if a parser is registered for a language
-   * 
+   *
    * @param language - Language identifier
    * @returns true if parser is registered
-   * 
+   *
    * @example
    * ```typescript
    * if (registry.hasParser('typescript')) {
@@ -199,9 +207,9 @@ export class ParserRegistry {
 
   /**
    * Get all registered languages
-   * 
+   *
    * @returns Array of language identifiers
-   * 
+   *
    * @example
    * ```typescript
    * const languages = registry.getRegisteredLanguages();
@@ -225,9 +233,9 @@ export class ParserRegistry {
 
   /**
    * Clear all registered parsers
-   * 
+   *
    * This is useful for testing or hot-reloading scenarios.
-   * 
+   *
    * @example
    * ```typescript
    * registry.clear();
@@ -242,10 +250,10 @@ export class ParserRegistry {
 
   /**
    * Unregister a parser for a specific language
-   * 
+   *
    * @param language - Language identifier
    * @returns true if parser was unregistered, false if not found
-   * 
+   *
    * @example
    * ```typescript
    * const removed = registry.unregister('python');

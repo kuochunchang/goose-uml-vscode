@@ -18,7 +18,7 @@ export class MermaidValidator {
     const warnings: string[] = [];
 
     if (!mermaidCode || mermaidCode.trim().length === 0) {
-      errors.push('Mermaid code is empty');
+      errors.push("Mermaid code is empty");
       return { valid: false, errors, warnings };
     }
 
@@ -27,7 +27,7 @@ export class MermaidValidator {
     // Check for valid diagram type declaration
     if (!this.hasValidHeader(trimmed)) {
       errors.push(
-        'Missing or invalid diagram type header (e.g., classDiagram, flowchart TD, sequenceDiagram, graph TD)'
+        "Missing or invalid diagram type header (e.g., classDiagram, flowchart TD, sequenceDiagram, graph TD)",
       );
     }
 
@@ -45,7 +45,7 @@ export class MermaidValidator {
 
     // Warning checks
     if (this.hasUnusedNodes(trimmed)) {
-      warnings.push('Some nodes may be defined but not connected');
+      warnings.push("Some nodes may be defined but not connected");
     }
 
     return {
@@ -62,8 +62,8 @@ export class MermaidValidator {
     let fixed = mermaidCode.trim();
 
     // Remove possible markdown code block markers
-    fixed = fixed.replace(/^```(?:mermaid)?\s*\n?/i, '');
-    fixed = fixed.replace(/\n?```\s*$/i, '');
+    fixed = fixed.replace(/^```(?:mermaid)?\s*\n?/i, "");
+    fixed = fixed.replace(/\n?```\s*$/i, "");
 
     // Fix type annotations in flowchart node labels
     fixed = this.fixFlowchartLabels(fixed);
@@ -75,7 +75,7 @@ export class MermaidValidator {
     fixed = this.fixRelationSyntax(fixed);
 
     // Remove excessive blank lines
-    fixed = fixed.replace(/\n{3,}/g, '\n\n');
+    fixed = fixed.replace(/\n{3,}/g, "\n\n");
 
     return fixed.trim();
   }
@@ -101,11 +101,11 @@ export class MermaidValidator {
 
     // Check for node names with invalid characters
     const invalidCharsRegex = /[^\w\s\-_.[\](){}|<>+=*\\,;"'`~!@#$%^&/:]/g;
-    const lines = code.split('\n');
+    const lines = code.split("\n");
 
     lines.forEach((line, index) => {
       // Skip comments and blank lines
-      if (line.trim().startsWith('%%') || line.trim().length === 0) {
+      if (line.trim().startsWith("%%") || line.trim().length === 0) {
         return;
       }
 
@@ -113,7 +113,9 @@ export class MermaidValidator {
       if (invalidCharsRegex.test(line)) {
         const match = invalidCharsRegex.exec(line);
         if (match) {
-          errors.push(`Line ${index + 1}: Invalid character '${match[0]}' in node definition`);
+          errors.push(
+            `Line ${index + 1}: Invalid character '${match[0]}' in node definition`,
+          );
         }
       }
     });
@@ -126,39 +128,42 @@ export class MermaidValidator {
 
     // Class diagram relationship syntax
     const classRelations = [
-      '<|--', // Inheritance
-      '<|..', // Implementation
-      '--*', // Composition
-      '--o', // Aggregation
-      '-->', // Association
-      '..', // Dependency
-      '--', // Link
+      "<|--", // Inheritance
+      "<|..", // Implementation
+      "--*", // Composition
+      "--o", // Aggregation
+      "-->", // Association
+      "..", // Dependency
+      "--", // Link
     ];
 
     // Graph/Flowchart relationship syntax
     const graphRelations = [
-      '-->', // Arrow
-      '---', // Connection
-      '-.->', // Dashed arrow
-      '-.-', // Dashed line
-      '==>', // Thick arrow
-      '===', // Thick line
+      "-->", // Arrow
+      "---", // Connection
+      "-.->", // Dashed arrow
+      "-.-", // Dashed line
+      "==>", // Thick arrow
+      "===", // Thick line
     ];
 
-    const lines = code.split('\n');
+    const lines = code.split("\n");
 
     lines.forEach((line, _index) => {
       // Skip diagram type declaration and comments
-      if (this.hasValidHeader(line) || line.trim().startsWith('%%')) {
+      if (this.hasValidHeader(line) || line.trim().startsWith("%%")) {
         return;
       }
 
       // Check if contains relationship symbols
-      const hasRelation = [...classRelations, ...graphRelations].some((rel) => line.includes(rel));
+      const hasRelation = [...classRelations, ...graphRelations].some((rel) =>
+        line.includes(rel),
+      );
 
       if (hasRelation) {
         // Simple check if relationship syntax is complete (nodes on both sides)
-        const relationPattern = /(\w+)\s*(--|<\||\.\.|-\.|==).+?(--|\|>|>|\*|o)\s*(\w+)/;
+        const relationPattern =
+          /(\w+)\s*(--|<\||\.\.|-\.|==).+?(--|\|>|>|\*|o)\s*(\w+)/;
         if (!relationPattern.test(line) && line.trim().length > 0) {
           // Possibly malformed relationship syntax, but not necessarily, so we can give warning instead of error
           // errors.push(`Line ${index + 1}: Possibly malformed relationship syntax`);
@@ -177,7 +182,7 @@ export class MermaidValidator {
     const closeBrackets = (code.match(/[)\]}]/g) || []).length;
 
     if (openBrackets !== closeBrackets) {
-      errors.push('Mismatched brackets or parentheses');
+      errors.push("Mismatched brackets or parentheses");
     }
 
     // Check quote matching
@@ -185,11 +190,11 @@ export class MermaidValidator {
     const singleQuotes = (code.match(/'/g) || []).length;
 
     if (doubleQuotes % 2 !== 0) {
-      errors.push('Mismatched double quotes');
+      errors.push("Mismatched double quotes");
     }
 
     if (singleQuotes % 2 !== 0) {
-      errors.push('Mismatched single quotes');
+      errors.push("Mismatched single quotes");
     }
 
     return errors;
@@ -206,17 +211,17 @@ export class MermaidValidator {
 
     // Remove some invalid characters from node names
     // Note: this is a simplified version, actual situation may be more complex
-    const lines = fixed.split('\n');
+    const lines = fixed.split("\n");
     const fixedLines = lines.map((line) => {
       // Keep comments and diagram type declarations
-      if (line.trim().startsWith('%%') || this.hasValidHeader(line)) {
+      if (line.trim().startsWith("%%") || this.hasValidHeader(line)) {
         return line;
       }
 
       // Fix spaces in node names (replace with underscores)
       // But keep spaces within quotes
       let inQuotes = false;
-      let result = '';
+      let result = "";
       for (let i = 0; i < line.length; i++) {
         const char = line[i];
         if (char === '"' || char === "'") {
@@ -228,7 +233,7 @@ export class MermaidValidator {
       return result;
     });
 
-    return fixedLines.join('\n');
+    return fixedLines.join("\n");
   }
 
   private fixRelationSyntax(code: string): string {
@@ -236,11 +241,11 @@ export class MermaidValidator {
 
     // Fix common relationship syntax errors
     // Example: <-- to <|--
-    fixed = fixed.replace(/<--/g, '<|--');
+    fixed = fixed.replace(/<--/g, "<|--");
 
     // Ensure spaces on both sides of relationship symbols
-    fixed = fixed.replace(/(\w)(<\|--|<\|\.\.|-->|---)/g, '$1 $2');
-    fixed = fixed.replace(/(<\|--|<\|\.\.|-->|---)(\w)/g, '$1 $2');
+    fixed = fixed.replace(/(\w)(<\|--|<\|\.\.|-->|---)/g, "$1 $2");
+    fixed = fixed.replace(/(<\|--|<\|\.\.|-->|---)(\w)/g, "$1 $2");
 
     return fixed;
   }
@@ -249,15 +254,17 @@ export class MermaidValidator {
     const fixed = code;
 
     // Detect if flowchart or graph
-    const isFlowchart = /^\s*(flowchart|graph)\s+(TD|TB|BT|RL|LR)/im.test(fixed);
+    const isFlowchart = /^\s*(flowchart|graph)\s+(TD|TB|BT|RL|LR)/im.test(
+      fixed,
+    );
     if (!isFlowchart) {
       return fixed;
     }
 
-    const lines = fixed.split('\n');
+    const lines = fixed.split("\n");
     const fixedLines = lines.map((line) => {
       // Skip comments and diagram type declarations
-      if (line.trim().startsWith('%%') || this.hasValidHeader(line)) {
+      if (line.trim().startsWith("%%") || this.hasValidHeader(line)) {
         return line;
       }
 
@@ -290,7 +297,7 @@ export class MermaidValidator {
       return line;
     });
 
-    return fixedLines.join('\n');
+    return fixedLines.join("\n");
   }
 
   private simplifyLabel(label: string): string {
@@ -298,10 +305,10 @@ export class MermaidValidator {
 
     // Remove TypeScript type annotation patterns: (param): type or (param: type): returnType
     // Example: "calculateGrade(score): string" -> "calculateGrade"
-    simplified = simplified.replace(/\([^)]*\):\s*\w+/g, '');
+    simplified = simplified.replace(/\([^)]*\):\s*\w+/g, "");
 
     // Remove function parameters: functionName(param1, param2) -> functionName
-    simplified = simplified.replace(/(\w+)\([^)]*\)/g, '$1');
+    simplified = simplified.replace(/(\w+)\([^)]*\)/g, "$1");
 
     // If label becomes empty, use original simplified version
     if (!simplified.trim()) {
@@ -311,7 +318,7 @@ export class MermaidValidator {
     }
 
     // Remove redundant colons and type annotations
-    simplified = simplified.replace(/:\s*\w+(\[\])?/g, '');
+    simplified = simplified.replace(/:\s*\w+(\[\])?/g, "");
 
     // Clean up redundant whitespace
     simplified = simplified.trim();

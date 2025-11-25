@@ -1,27 +1,30 @@
-import { parse } from '@babel/parser';
-import traverseDefault from '@babel/traverse';
-import * as t from '@babel/types';
-import * as path from 'path';
+import { parse } from "@babel/parser";
+import traverseDefault from "@babel/traverse";
+import * as t from "@babel/types";
+import * as path from "path";
+import { LanguageDetector } from "../parsers/common/index.js";
+import { ImportIndex } from "../services/ImportIndex.js";
+import { ParserService } from "../services/ParserService.js";
 import type {
   BidirectionalAnalysisResult,
   ClassInfo,
   DependencyInfo,
+  ExportInfo,
   FileAnalysisResult,
   IFileProvider,
+  ImportInfo,
   MethodInfo,
   ParameterInfo,
   PropertyInfo,
   UnifiedAST,
-  ImportInfo,
-  ExportInfo,
-} from '../types/index.js';
-import { LanguageDetector } from '../parsers/common/index.js';
-import { ParserService } from '../services/ParserService.js';
-import { OOAnalyzer } from './OOAnalyzer.js';
+} from "../types/index.js";
+import { OOAnalyzer } from "./OOAnalyzer.js";
 
 // Handle CommonJS/ESM compatibility for @babel/traverse
 const traverse =
-  typeof traverseDefault === 'function' ? traverseDefault : (traverseDefault as any).default;
+  typeof traverseDefault === "function"
+    ? traverseDefault
+    : (traverseDefault as any).default;
 
 /**
  * CrossFileAnalyzer - Platform-agnostic cross-file dependency analyzer
@@ -30,12 +33,16 @@ const traverse =
  * - Forward dependency analysis: Track which files this file imports
  * - Supports multi-level depth tracking (depth 1-3)
  * - Circular dependency detection
- * - AST caching for performance
+ * - Fast class resolution via ImportIndex (optional)
  *
  * Platform Integration:
  * - Uses IFileProvider for all file operations (platform-agnostic)
  * - Delegates import resolution to the provider
  * - No direct file system dependencies
+ *
+ * Performance Optimization:
+ * - Optional ImportIndex for fast class-to-file resolution (O(1) lookup)
+ * - Falls back to project-wide glob search if index not provided (O(N) scan)
  *
  * Note:
  * - Reverse dependency analysis (who imports this file) is handled by the adapter layer
@@ -45,23 +52,15 @@ export class CrossFileAnalyzer {
   private readonly ooAnalyzer: OOAnalyzer;
   private readonly parserService: ParserService;
 
-  // AST cache: filePath → { ast, analysis }
-  // Note: mtime validation removed - adapter layer can handle cache invalidation
-  private astCache: Map<
-    string,
-    {
-      ast: any;
-      analysis: FileAnalysisResult;
-    }
-  >;
-
   // Visited files (used to avoid circular dependencies)
   private visited: Set<string>;
 
-  constructor(private readonly fileProvider: IFileProvider) {
+  constructor(
+    private readonly fileProvider: IFileProvider,
+    private readonly importIndex?: ImportIndex,
+  ) {
     this.ooAnalyzer = new OOAnalyzer();
     this.parserService = ParserService.getInstance();
-    this.astCache = new Map();
     this.visited = new Set();
   }
 
@@ -74,11 +73,11 @@ export class CrossFileAnalyzer {
    */
   async analyzeForward(
     filePath: string,
-    maxDepth: 1 | 2 | 3
+    maxDepth: 1 | 2 | 3,
   ): Promise<Map<string, FileAnalysisResult>> {
     // Validate depth parameter
     if (maxDepth < 1 || maxDepth > 3) {
-      throw new Error('Depth must be between 1 and 3');
+      throw new Error("Depth must be between 1 and 3");
     }
 
     // Verify file exists
@@ -125,11 +124,11 @@ export class CrossFileAnalyzer {
    */
   async analyzeBidirectional(
     filePath: string,
-    maxDepth: 1 | 2 | 3
+    maxDepth: 1 | 2 | 3,
   ): Promise<BidirectionalAnalysisResult> {
     // Validate depth parameter
     if (maxDepth < 1 || maxDepth > 3) {
-      throw new Error('Depth must be between 1 and 3');
+      throw new Error("Depth must be between 1 and 3");
     }
 
     // Verify file exists
@@ -188,7 +187,7 @@ export class CrossFileAnalyzer {
     for (const result of allResults.values()) {
       for (const rel of result.relationships) {
         // Create unique key: from:to:type:context
-        const key = `${rel.from}:${rel.to}:${rel.type}:${rel.context || ''}`;
+        const key = `${rel.from}:${rel.to}:${rel.type}:${rel.context || ""}`;
         if (!relationshipSet.has(key)) {
           relationshipSet.add(key);
           allRelationships.push(rel);
@@ -197,7 +196,9 @@ export class CrossFileAnalyzer {
     }
 
     // 6. Calculate statistics
-    const maxDepthFound = Math.max(...Array.from(allResults.values()).map((r) => r.depth));
+    const maxDepthFound = Math.max(
+      ...Array.from(allResults.values()).map((r) => r.depth),
+    );
 
     return {
       targetFile: filePath,
@@ -216,7 +217,7 @@ export class CrossFileAnalyzer {
 
   /**
    * Recursively analyze file and its dependencies
-   * 
+   *
    * Strategy: Instead of relying on import statements (which are error-prone and language-specific),
    * we extract class dependencies directly from AST relationships and search for matching files.
    */
@@ -224,7 +225,7 @@ export class CrossFileAnalyzer {
     filePath: string,
     currentDepth: number,
     maxDepth: number,
-    results: Map<string, FileAnalysisResult>
+    results: Map<string, FileAnalysisResult>,
   ): Promise<void> {
     // Check if already visited (avoid circular dependencies)
     if (this.visited.has(filePath)) {
@@ -252,9 +253,14 @@ export class CrossFileAnalyzer {
     for (const className of referencedClasses) {
       // Try to find the class file (prioritize same directory, then search project-wide)
       const resolvedPath = await this.findClassFile(filePath, className);
-      
+
       if (resolvedPath && !this.visited.has(resolvedPath)) {
-        await this.analyzeFileRecursive(resolvedPath, currentDepth + 1, maxDepth, results);
+        await this.analyzeFileRecursive(
+          resolvedPath,
+          currentDepth + 1,
+          maxDepth,
+          results,
+        );
       } else if (!resolvedPath) {
         unresolvedClasses.push(className);
       }
@@ -264,7 +270,7 @@ export class CrossFileAnalyzer {
     if (unresolvedClasses.length > 0) {
       console.debug(
         `[CrossFileAnalyzer] Unresolved classes in ${filePath}:`,
-        unresolvedClasses
+        unresolvedClasses,
       );
     }
   }
@@ -299,39 +305,68 @@ export class CrossFileAnalyzer {
 
   /**
    * Find class file by searching the project
-   * 
+   *
    * Search strategy:
-   * 1. Try same directory first (most common case)
-   * 2. For Python: check imports to find the source module
-   * 3. Search project-wide using glob patterns
-   * 4. For Python: parse all Python files to find class definition
+   * 1. Try same directory first (most common case - O(1))
+   * 2. Use ImportIndex if available (fast - O(1) lookup)
+   * 3. For Python: check imports to find the source module
+   * 4. Fallback: Search project-wide using glob patterns (slow - O(N))
    */
   private async findClassFile(
     currentFilePath: string,
-    className: string
+    className: string,
   ): Promise<string | null> {
     const language = LanguageDetector.detectFromFilePath(currentFilePath);
 
     // Strategy 1: Check same directory first (fast path)
-    const sameDirPath = await this.tryResolveInSameDirectory(currentFilePath, className, language);
+    const sameDirPath = await this.tryResolveInSameDirectory(
+      currentFilePath,
+      className,
+      language,
+    );
     if (sameDirPath) {
-      console.debug(`[CrossFileAnalyzer] Resolved class in same directory: ${className} -> ${sameDirPath}`);
+      console.debug(
+        `[CrossFileAnalyzer] Resolved class in same directory: ${className} -> ${sameDirPath}`,
+      );
       return sameDirPath;
     }
 
-    // Strategy 2: For Python, use imports to find the source module
-    if (language === 'python') {
-      const importBasedPath = await this.findPythonClassViaImports(currentFilePath, className);
+    // Strategy 2: Use ImportIndex if available (O(1) lookup)
+    if (this.importIndex) {
+      const candidates = this.importIndex.resolve(className);
+      if (candidates.length > 0) {
+        // Return first candidate (prioritize by file path similarity if needed)
+        const resolvedPath = candidates[0];
+        console.debug(
+          `[CrossFileAnalyzer] Resolved class via ImportIndex: ${className} -> ${resolvedPath}`,
+        );
+        return resolvedPath;
+      }
+    }
+
+    // Strategy 3: For Python, use imports to find the source module
+    if (language === "python") {
+      const importBasedPath = await this.findPythonClassViaImports(
+        currentFilePath,
+        className,
+      );
       if (importBasedPath) {
-        console.debug(`[CrossFileAnalyzer] Resolved Python class via imports: ${className} -> ${importBasedPath}`);
+        console.debug(
+          `[CrossFileAnalyzer] Resolved Python class via imports: ${className} -> ${importBasedPath}`,
+        );
         return importBasedPath;
       }
     }
 
-    // Strategy 3: Search project-wide (slower but more thorough)
-    const projectWidePath = await this.searchClassInProject(className, language);
+    // Strategy 4: Fallback to project-wide search (slower but more thorough)
+    const projectWidePath = await this.searchClassInProject(
+      className,
+      language,
+    );
     if (projectWidePath) {
-      console.debug(`[CrossFileAnalyzer] Resolved class via project search: ${className} -> ${projectWidePath}`);
+      console.debug(
+        `[CrossFileAnalyzer] Resolved class via project search: ${className} -> ${projectWidePath}`,
+      );
       return projectWidePath;
     }
 
@@ -341,26 +376,16 @@ export class CrossFileAnalyzer {
   /**
    * Find Python class file by checking imports
    * For example, if we have "from .layer_2 import Service", resolve .layer_2 to find Service
+   *
+   * Note: This method previously relied on cache. With cache removed, Python import resolution
+   * is temporarily disabled until a better solution is implemented (e.g., using ImportIndex).
    */
   private async findPythonClassViaImports(
-    currentFilePath: string,
-    className: string
+    _currentFilePath: string,
+    _className: string,
   ): Promise<string | null> {
-    // Get the analysis result (should be cached)
-    const cached = this.getCachedAnalysis(currentFilePath);
-    if (!cached) return null;
-
-    // Look for imports that import this class
-    for (const importInfo of cached.imports) {
-      if (importInfo.specifiers.includes(className)) {
-        // Found an import for this class, try to resolve the source module
-        const resolvedPath = await this.fileProvider.resolveImport(currentFilePath, importInfo.source);
-        if (resolvedPath) {
-          return resolvedPath;
-        }
-      }
-    }
-
+    // TODO: Re-implement Python import resolution without cache
+    // Possible solution: Pass FileAnalysisResult as parameter instead of relying on cache
     return null;
   }
 
@@ -370,17 +395,17 @@ export class CrossFileAnalyzer {
   private async tryResolveInSameDirectory(
     currentFilePath: string,
     className: string,
-    language: string | null
+    language: string | null,
   ): Promise<string | null> {
     // Use path.dirname to handle both forward slashes (Unix) and backslashes (Windows)
     const directory = path.dirname(currentFilePath);
 
-    if (language === 'java') {
+    if (language === "java") {
       const candidatePath = path.join(directory, `${className}.java`);
       if (await this.fileProvider.exists(candidatePath)) {
         return candidatePath;
       }
-    } else if (language === 'python') {
+    } else if (language === "python") {
       // Try snake_case conversion
       const snakeCaseName = this.camelToSnakeCase(className);
       const candidatePath1 = path.join(directory, `${snakeCaseName}.py`);
@@ -395,13 +420,16 @@ export class CrossFileAnalyzer {
       }
 
       // Try lowercase
-      const candidatePath3 = path.join(directory, `${className.toLowerCase()}.py`);
+      const candidatePath3 = path.join(
+        directory,
+        `${className.toLowerCase()}.py`,
+      );
       if (await this.fileProvider.exists(candidatePath3)) {
         return candidatePath3;
       }
-    } else if (language === 'typescript' || language === 'javascript') {
+    } else if (language === "typescript" || language === "javascript") {
       // Try various TypeScript/JavaScript extensions
-      const extensions = ['.ts', '.tsx', '.js', '.jsx'];
+      const extensions = [".ts", ".tsx", ".js", ".jsx"];
       for (const ext of extensions) {
         const candidatePath = path.join(directory, `${className}${ext}`);
         if (await this.fileProvider.exists(candidatePath)) {
@@ -409,7 +437,10 @@ export class CrossFileAnalyzer {
         }
 
         // Try lowercase for TypeScript/JavaScript
-        const lowerPath = path.join(directory, `${className.toLowerCase()}${ext}`);
+        const lowerPath = path.join(
+          directory,
+          `${className.toLowerCase()}${ext}`,
+        );
         if (await this.fileProvider.exists(lowerPath)) {
           return lowerPath;
         }
@@ -424,13 +455,13 @@ export class CrossFileAnalyzer {
    */
   private async searchClassInProject(
     className: string,
-    language: string | null
+    language: string | null,
   ): Promise<string | null> {
     let pattern: string;
 
-    if (language === 'java') {
+    if (language === "java") {
       pattern = `**/${className}.java`;
-    } else if (language === 'python') {
+    } else if (language === "python") {
       // Try multiple naming conventions
       const snakeCaseName = this.camelToSnakeCase(className);
       const patterns = [
@@ -447,7 +478,7 @@ export class CrossFileAnalyzer {
         }
       }
       return null;
-    } else if (language === 'typescript' || language === 'javascript') {
+    } else if (language === "typescript" || language === "javascript") {
       // Search for TypeScript/JavaScript files
       const patterns = [
         `**/${className}.ts`,
@@ -488,13 +519,13 @@ export class CrossFileAnalyzer {
     }
 
     // Prioritize test-data files
-    const testDataFiles = files.filter(f => f.includes('test-data'));
+    const testDataFiles = files.filter((f) => f.includes("test-data"));
     if (testDataFiles.length > 0) {
       return testDataFiles[0];
     }
 
     // Prioritize src files
-    const srcFiles = files.filter(f => f.includes('/src/'));
+    const srcFiles = files.filter((f) => f.includes("/src/"));
     if (srcFiles.length > 0) {
       return srcFiles[0];
     }
@@ -507,19 +538,18 @@ export class CrossFileAnalyzer {
    * Convert CamelCase to snake_case
    */
   private camelToSnakeCase(str: string): string {
-    return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`).replace(/^_/, '');
+    return str
+      .replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+      .replace(/^_/, "");
   }
 
   /**
    * Analyze single file
    */
-  private async analyzeFile(filePath: string, depth: number): Promise<FileAnalysisResult> {
-    // Check cache
-    const cached = this.getCachedAnalysis(filePath);
-    if (cached) {
-      return { ...cached, depth }; // Update depth
-    }
-
+  private async analyzeFile(
+    filePath: string,
+    depth: number,
+  ): Promise<FileAnalysisResult> {
     // Read file content
     const code = await this.fileProvider.readFile(filePath);
 
@@ -530,11 +560,11 @@ export class CrossFileAnalyzer {
     let exports: ExportInfo[] = [];
     let classes: ClassInfo[] = [];
 
-    if (language === 'typescript' || language === 'javascript') {
+    if (language === "typescript" || language === "javascript") {
       // Use Babel parser for TypeScript/JavaScript (backward compatible)
       ast = parse(code, {
-        sourceType: 'module',
-        plugins: ['typescript', 'jsx', 'decorators-legacy', 'classProperties'],
+        sourceType: "module",
+        plugins: ["typescript", "jsx", "decorators-legacy", "classProperties"],
       });
 
       // Extract imports
@@ -569,9 +599,15 @@ export class CrossFileAnalyzer {
       for (const iface of unifiedAST.interfaces) {
         classes.push({
           ...iface,
-          type: 'class' as const,
-          extends: iface.extends && iface.extends.length > 0 ? iface.extends[0] : undefined,
-          implements: iface.extends && iface.extends.length > 1 ? iface.extends.slice(1) : undefined,
+          type: "class" as const,
+          extends:
+            iface.extends && iface.extends.length > 0
+              ? iface.extends[0]
+              : undefined,
+          implements:
+            iface.extends && iface.extends.length > 1
+              ? iface.extends.slice(1)
+              : undefined,
         });
       }
       imports = unifiedAST.imports;
@@ -593,49 +629,7 @@ export class CrossFileAnalyzer {
       relationships: ooAnalysis.relationships,
     };
 
-    // Cache result
-    this.cacheAnalysis(filePath, ast, analysis);
-
     return analysis;
-  }
-
-  /**
-   * Get analysis result from cache
-   *
-   * Note: mtime validation removed - adapter layer can handle cache invalidation
-   */
-  private getCachedAnalysis(filePath: string): FileAnalysisResult | null {
-    const cached = this.astCache.get(filePath);
-    if (!cached) {
-      return null;
-    }
-
-    return cached.analysis;
-  }
-
-  /**
-   * Cache analysis result
-   */
-  private cacheAnalysis(filePath: string, ast: any, analysis: FileAnalysisResult): void {
-    this.astCache.set(filePath, {
-      ast,
-      analysis,
-    });
-  }
-
-  /**
-   * Get all analyzed files list
-   */
-  getAnalyzedFiles(): string[] {
-    return Array.from(this.astCache.keys());
-  }
-
-  /**
-   * Clear cache
-   */
-  clearCache(): void {
-    this.astCache.clear();
-    this.visited.clear();
   }
 
   /**
@@ -653,13 +647,18 @@ export class CrossFileAnalyzer {
 
     // Extract superClass (extends)
     const extendsClass =
-      node.superClass && t.isIdentifier(node.superClass) ? node.superClass.name : undefined;
+      node.superClass && t.isIdentifier(node.superClass)
+        ? node.superClass.name
+        : undefined;
 
     // Extract implements
     const implementsInterfaces: string[] = [];
     if (node.implements) {
       node.implements.forEach((impl: any) => {
-        if (t.isTSExpressionWithTypeArguments(impl) && t.isIdentifier(impl.expression)) {
+        if (
+          t.isTSExpressionWithTypeArguments(impl) &&
+          t.isIdentifier(impl.expression)
+        ) {
           implementsInterfaces.push(impl.expression.name);
         }
       });
@@ -673,9 +672,11 @@ export class CrossFileAnalyzer {
           properties.push(propInfo);
         }
       } else if (t.isClassMethod(member) && t.isIdentifier(member.key)) {
-        if (member.kind === 'constructor') {
+        if (member.kind === "constructor") {
           // Extract constructor parameters
-          constructorParams = member.params.map((param: any) => this.extractParameterInfo(param));
+          constructorParams = member.params.map((param: any) =>
+            this.extractParameterInfo(param),
+          );
         } else {
           const methodInfo = this.extractMethodInfo(member);
           if (methodInfo) {
@@ -687,20 +688,24 @@ export class CrossFileAnalyzer {
 
     return {
       name: className,
-      type: 'class',
+      type: "class",
       properties,
       methods,
       extends: extendsClass,
-      implements: implementsInterfaces.length > 0 ? implementsInterfaces : undefined,
+      implements:
+        implementsInterfaces.length > 0 ? implementsInterfaces : undefined,
       isAbstract: node.abstract ?? undefined,
-      constructorParams: constructorParams.length > 0 ? constructorParams : undefined,
+      constructorParams:
+        constructorParams.length > 0 ? constructorParams : undefined,
     };
   }
 
   /**
    * Extract interface information from AST node
    */
-  private extractInterfaceInfo(node: t.TSInterfaceDeclaration): ClassInfo | null {
+  private extractInterfaceInfo(
+    node: t.TSInterfaceDeclaration,
+  ): ClassInfo | null {
     const interfaceName = node.id.name;
     const properties: PropertyInfo[] = [];
     const methods: MethodInfo[] = [];
@@ -732,7 +737,7 @@ export class CrossFileAnalyzer {
 
     return {
       name: interfaceName,
-      type: 'interface',
+      type: "interface",
       properties,
       methods,
       implements: extendsInterfaces.length > 0 ? extendsInterfaces : undefined,
@@ -778,7 +783,7 @@ export class CrossFileAnalyzer {
     return {
       name,
       type,
-      visibility: 'public',
+      visibility: "public",
       isOptional: member.optional,
     };
   }
@@ -793,7 +798,9 @@ export class CrossFileAnalyzer {
 
     const name = member.key.name;
     const visibility = this.getVisibility(member);
-    const parameters = member.params.map((param: any) => this.extractParameterInfo(param));
+    const parameters = member.params.map((param: any) =>
+      this.extractParameterInfo(param),
+    );
     const returnType = member.returnType
       ? this.getTypeString(member.returnType.typeAnnotation)
       : undefined;
@@ -818,7 +825,9 @@ export class CrossFileAnalyzer {
     }
 
     const name = member.key.name;
-    const parameters = member.parameters.map((param: any) => this.extractParameterInfo(param));
+    const parameters = member.parameters.map((param: any) =>
+      this.extractParameterInfo(param),
+    );
     const returnType = member.typeAnnotation
       ? this.getTypeString(member.typeAnnotation.typeAnnotation)
       : undefined;
@@ -827,7 +836,7 @@ export class CrossFileAnalyzer {
       name,
       parameters,
       returnType,
-      visibility: 'public',
+      visibility: "public",
     };
   }
 
@@ -835,22 +844,25 @@ export class CrossFileAnalyzer {
    * Extract parameter information
    */
   private extractParameterInfo(param: any): ParameterInfo {
-    let name = 'unknown';
+    let name = "unknown";
     let type: string | undefined;
     let isOptional = false;
 
     if (t.isIdentifier(param)) {
       name = param.name;
       type =
-        param.typeAnnotation && 'typeAnnotation' in param.typeAnnotation
+        param.typeAnnotation && "typeAnnotation" in param.typeAnnotation
           ? this.getTypeString((param.typeAnnotation as any).typeAnnotation)
           : undefined;
       isOptional = param.optional ?? false;
     } else if (t.isAssignmentPattern(param) && t.isIdentifier(param.left)) {
       name = param.left.name;
       type =
-        param.left.typeAnnotation && 'typeAnnotation' in param.left.typeAnnotation
-          ? this.getTypeString((param.left.typeAnnotation as any).typeAnnotation)
+        param.left.typeAnnotation &&
+        "typeAnnotation" in param.left.typeAnnotation
+          ? this.getTypeString(
+              (param.left.typeAnnotation as any).typeAnnotation,
+            )
           : undefined;
       isOptional = true;
     }
@@ -865,11 +877,11 @@ export class CrossFileAnalyzer {
   /**
    * Get visibility modifier
    */
-  private getVisibility(member: any): 'public' | 'private' | 'protected' {
+  private getVisibility(member: any): "public" | "private" | "protected" {
     if (member.accessibility) {
-      return member.accessibility as 'public' | 'private' | 'protected';
+      return member.accessibility as "public" | "private" | "protected";
     }
-    return 'public';
+    return "public";
   }
 
   /**
@@ -877,26 +889,29 @@ export class CrossFileAnalyzer {
    */
   private getTypeString(typeAnnotation: any): string {
     if (t.isTSStringKeyword(typeAnnotation)) {
-      return 'string';
+      return "string";
     }
     if (t.isTSNumberKeyword(typeAnnotation)) {
-      return 'number';
+      return "number";
     }
     if (t.isTSBooleanKeyword(typeAnnotation)) {
-      return 'boolean';
+      return "boolean";
     }
     if (t.isTSVoidKeyword(typeAnnotation)) {
-      return 'void';
+      return "void";
     }
     if (t.isTSAnyKeyword(typeAnnotation)) {
-      return 'any';
+      return "any";
     }
-    if (t.isTSTypeReference(typeAnnotation) && t.isIdentifier(typeAnnotation.typeName)) {
+    if (
+      t.isTSTypeReference(typeAnnotation) &&
+      t.isIdentifier(typeAnnotation.typeName)
+    ) {
       return typeAnnotation.typeName.name;
     }
     if (t.isTSArrayType(typeAnnotation)) {
-      return this.getTypeString(typeAnnotation.elementType) + '[]';
+      return this.getTypeString(typeAnnotation.elementType) + "[]";
     }
-    return 'unknown';
+    return "unknown";
   }
 }

@@ -5,4 +5,4 @@
  * @packageDocumentation
  */
 
-export { VSCodeFileProvider } from './vscode-file-provider.js';
+export { VSCodeFileProvider } from "./vscode-file-provider.js";
