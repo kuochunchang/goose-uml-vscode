@@ -1184,7 +1184,8 @@ export class UMLAnalyzer {
       );
 
       internalDeps.forEach((dep) => {
-        let { from, to, type, cardinality, context } = dep;
+        const { type, cardinality, context } = dep;
+        let { from, to } = dep;
 
         // In reverse mode, swap from/to to reverse arrow direction
         // This makes the target file (most depended upon) appear at the bottom
