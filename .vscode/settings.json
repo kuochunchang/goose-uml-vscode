@@ -1,4 +1,9 @@
 {
   "html.validate.styles": false,
-  "css.validate": false
+  "css.validate": false,
+  "gooseSonarQube.projectBinding": {
+    "connectionId": "local-sonarqube",
+    "projectKey": "goose-uml-vscode",
+    "projectName": ""
+  }
 }
