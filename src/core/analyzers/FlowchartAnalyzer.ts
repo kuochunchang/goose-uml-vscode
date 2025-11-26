@@ -45,7 +45,8 @@ export class FlowchartAnalyzer {
 
     // Use provided file path or default
     // Note: ast.filePath might be missing in some tests, handle gracefully
-    const entryFilePath = (ast as any).filePath || "current_file";
+    const entryFilePath =
+      (ast as UnifiedAST & { filePath?: string }).filePath || "current_file";
     this.currentFilePath = entryFilePath;
 
     if (!ast.originalAST) {

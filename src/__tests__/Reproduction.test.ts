@@ -5,26 +5,26 @@ import { ParserService } from "../core/services/ParserService.js";
 import { InMemoryFileProvider } from "../core/__tests__/helpers/InMemoryFileProvider.js";
 
 describe("Reproduction", () => {
-    let analyzer: FlowchartAnalyzer;
-    let parserService: ParserService;
-    let fileProvider: InMemoryFileProvider;
+  let analyzer: FlowchartAnalyzer;
+  let parserService: ParserService;
+  let fileProvider: InMemoryFileProvider;
 
-    beforeAll(() => {
-        parserService = ParserService.getInstance();
-        try {
-            parserService.registerParser(new JavaParser());
-        } catch {
-            // Ignore if already registered
-        }
-    });
+  beforeAll(() => {
+    parserService = ParserService.getInstance();
+    try {
+      parserService.registerParser(new JavaParser());
+    } catch {
+      // Ignore if already registered
+    }
+  });
 
-    beforeEach(() => {
-        fileProvider = new InMemoryFileProvider();
-        analyzer = new FlowchartAnalyzer(fileProvider);
-    });
+  beforeEach(() => {
+    fileProvider = new InMemoryFileProvider();
+    analyzer = new FlowchartAnalyzer(fileProvider);
+  });
 
-    it("should handle ConsoleSendCoreService.java", async () => {
-        const code = `
+  it("should handle ConsoleSendCoreService.java", async () => {
+    const code = `
 package tw.com.webcomm.core.service.console;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,11 +58,11 @@ public class ConsoleSendCoreService {
     }
 }
     `;
-        const ast = await parserService.parse(code, "ConsoleSendCoreService.java");
-        const mermaid = await analyzer.analyze(ast);
+    const ast = await parserService.parse(code, "ConsoleSendCoreService.java");
+    const mermaid = await analyzer.analyze(ast);
 
-        // Check for escaped characters in the if condition
-        // sendFromKey.contains(".") -> sendFromKey.contains&#40;&quot;.&quot;&#41;
-        expect(mermaid).toContain('{"sendFromKey.contains&#40;&quot;.&quot;&#41;?"}');
-    });
+    // Check for escaped characters in the if condition
+    // sendFromKey.contains(".") -> sendFromKey.contains#40;#quot;.#quot;#41;
+    expect(mermaid).toContain('{"sendFromKey.contains#40;#quot;.#quot;#41;?"}');
+  });
 });

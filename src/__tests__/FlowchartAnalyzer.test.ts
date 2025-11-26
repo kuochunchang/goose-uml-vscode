@@ -13,8 +13,6 @@ describe("FlowchartAnalyzer", () => {
   let parserService: ParserService;
   let fileProvider: InMemoryFileProvider;
 
-
-
   beforeAll(() => {
     parserService = ParserService.getInstance();
     try {
@@ -145,7 +143,9 @@ def test():
     const mermaid = await analyzer.analyze(ast);
 
     // log.info("...") -> log.info&#40;&quot;...&quot;, ...&#41;
-    expect(mermaid).toContain('log.info#40;#quot;generateTemplateId templateId: #123;#125;#quot;, consoleTemplateContentFillId#41;');
+    expect(mermaid).toContain(
+      "log.info#40;#quot;generateTemplateId templateId: #123;#125;#quot;, consoleTemplateContentFillId#41;",
+    );
   });
 
   it("should handle if statement with quotes (reproduction 2)", async () => {

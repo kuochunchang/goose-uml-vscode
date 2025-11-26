@@ -708,7 +708,7 @@ export class UMLAnalyzer {
       if (!this.parserService.canParse(normalizedPath)) {
         throw new Error(
           `No parser available for language '${language}' (file: ${normalizedPath}). ` +
-          `Supported languages: ${this.parserService.getSupportedLanguages().join(", ")}`,
+            `Supported languages: ${this.parserService.getSupportedLanguages().join(", ")}`,
         );
       }
 
@@ -723,8 +723,8 @@ export class UMLAnalyzer {
 
     throw new Error(
       `Unsupported file type: ${normalizedPath}. ` +
-      `Could not detect language from file path. ` +
-      `Supported extensions: .ts, .tsx, .js, .jsx, .java, .py, .pyi, .pyw`,
+        `Could not detect language from file path. ` +
+        `Supported extensions: .ts, .tsx, .js, .jsx, .java, .py, .pyi, .pyw`,
     );
   }
 

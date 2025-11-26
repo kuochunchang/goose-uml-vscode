@@ -11,7 +11,7 @@ import {
 import { DiagramPanel } from "../views/diagram-panel.js";
 
 export class GenerateFlowchartCommand {
-  constructor(private readonly context: vscode.ExtensionContext) { }
+  constructor(private readonly context: vscode.ExtensionContext) {}
 
   async execute(): Promise<void> {
     try {
