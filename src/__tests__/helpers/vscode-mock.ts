@@ -106,7 +106,7 @@ export function createMockVSCode(): typeof vscode {
       activate: vi.fn(),
     },
     environmentVariableCollection: {} as vscode.EnvironmentVariableCollection,
-    extensionRuntime: 1 as vscode.ExtensionRuntime,
+    extensionRuntime: 1 as number,
   };
 
   const mockTextDocument = {
