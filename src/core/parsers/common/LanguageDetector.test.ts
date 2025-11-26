@@ -5,33 +5,55 @@ describe("LanguageDetector", () => {
   describe("detectFromFilePath", () => {
     it("should detect TypeScript from .ts files", () => {
       expect(LanguageDetector.detectFromFilePath("file.ts")).toBe("typescript");
-      expect(LanguageDetector.detectFromFilePath("/path/to/file.ts")).toBe("typescript");
-      expect(LanguageDetector.detectFromFilePath("src/App.ts")).toBe("typescript");
+      expect(LanguageDetector.detectFromFilePath("/path/to/file.ts")).toBe(
+        "typescript",
+      );
+      expect(LanguageDetector.detectFromFilePath("src/App.ts")).toBe(
+        "typescript",
+      );
     });
 
     it("should detect TypeScript from .tsx files", () => {
-      expect(LanguageDetector.detectFromFilePath("file.tsx")).toBe("typescript");
-      expect(LanguageDetector.detectFromFilePath("src/App.tsx")).toBe("typescript");
+      expect(LanguageDetector.detectFromFilePath("file.tsx")).toBe(
+        "typescript",
+      );
+      expect(LanguageDetector.detectFromFilePath("src/App.tsx")).toBe(
+        "typescript",
+      );
     });
 
     it("should detect TypeScript from .mts and .cts files", () => {
-      expect(LanguageDetector.detectFromFilePath("file.mts")).toBe("typescript");
-      expect(LanguageDetector.detectFromFilePath("file.cts")).toBe("typescript");
+      expect(LanguageDetector.detectFromFilePath("file.mts")).toBe(
+        "typescript",
+      );
+      expect(LanguageDetector.detectFromFilePath("file.cts")).toBe(
+        "typescript",
+      );
     });
 
     it("should detect JavaScript from .js files", () => {
       expect(LanguageDetector.detectFromFilePath("file.js")).toBe("javascript");
-      expect(LanguageDetector.detectFromFilePath("/path/to/file.js")).toBe("javascript");
+      expect(LanguageDetector.detectFromFilePath("/path/to/file.js")).toBe(
+        "javascript",
+      );
     });
 
     it("should detect JavaScript from .jsx files", () => {
-      expect(LanguageDetector.detectFromFilePath("file.jsx")).toBe("javascript");
-      expect(LanguageDetector.detectFromFilePath("src/App.jsx")).toBe("javascript");
+      expect(LanguageDetector.detectFromFilePath("file.jsx")).toBe(
+        "javascript",
+      );
+      expect(LanguageDetector.detectFromFilePath("src/App.jsx")).toBe(
+        "javascript",
+      );
     });
 
     it("should detect JavaScript from .mjs and .cjs files", () => {
-      expect(LanguageDetector.detectFromFilePath("file.mjs")).toBe("javascript");
-      expect(LanguageDetector.detectFromFilePath("file.cjs")).toBe("javascript");
+      expect(LanguageDetector.detectFromFilePath("file.mjs")).toBe(
+        "javascript",
+      );
+      expect(LanguageDetector.detectFromFilePath("file.cjs")).toBe(
+        "javascript",
+      );
     });
 
     it("should detect Java from .java files", () => {
@@ -62,8 +84,12 @@ describe("LanguageDetector", () => {
     });
 
     it("should handle file:// URI format", () => {
-      expect(LanguageDetector.detectFromFilePath("file:///path/to/file.ts")).toBe("typescript");
-      expect(LanguageDetector.detectFromFilePath("file:///C:/path/to/file.ts")).toBe("typescript");
+      expect(
+        LanguageDetector.detectFromFilePath("file:///path/to/file.ts"),
+      ).toBe("typescript");
+      expect(
+        LanguageDetector.detectFromFilePath("file:///C:/path/to/file.ts"),
+      ).toBe("typescript");
     });
 
     it("should handle case-insensitive extensions", () => {
@@ -179,4 +205,3 @@ describe("LanguageDetector", () => {
     });
   });
 });
-

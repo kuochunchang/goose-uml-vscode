@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { ParserRegistry } from "./ParserRegistry.js";
 import type { ILanguageParser } from "./ILanguageParser.js";
-import { registerTestParsers } from "../../__tests__/helpers/registerParsers.js";
 
 describe("ParserRegistry", () => {
   let registry: ParserRegistry;
@@ -240,4 +239,3 @@ describe("ParserRegistry", () => {
     });
   });
 });
-

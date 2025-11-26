@@ -36,7 +36,11 @@ function calculateGrade(score: number): string {
   }
 }
       `.trim();
-      const result = await analyzer.generateDiagram(code, "flowchart", "test.ts");
+      const result = await analyzer.generateDiagram(
+        code,
+        "flowchart",
+        "test.ts",
+      );
 
       expect(result.type).toBe("flowchart");
       expect(result.mermaidCode).toContain("flowchart");
@@ -53,7 +57,11 @@ function calculateGrade(score: number): string {
     it("should handle parse errors gracefully", async () => {
       // Invalid code may not throw but return empty result
       const invalidCode = "class { invalid syntax }";
-      const result = await analyzer.generateDiagram(invalidCode, "class", "test.ts");
+      const result = await analyzer.generateDiagram(
+        invalidCode,
+        "class",
+        "test.ts",
+      );
       // Should still return a result (may be empty)
       expect(result).toBeDefined();
       expect(result.type).toBe("class");
@@ -64,9 +72,13 @@ function calculateGrade(score: number): string {
     it("should generate single-file class diagram (depth=0)", async () => {
       fileProvider.addFile("/src/User.ts", TS_FIXTURES.simpleClass);
 
-      const result = await analyzer.generateUnifiedDiagram("/src/User.ts", "class", {
-        depth: 0,
-      });
+      const result = await analyzer.generateUnifiedDiagram(
+        "/src/User.ts",
+        "class",
+        {
+          depth: 0,
+        },
+      );
 
       expect(result.type).toBe("class");
       expect(result.metadata?.depth).toBe(0);
@@ -82,10 +94,14 @@ function calculateGrade(score: number): string {
       );
       fileProvider.addFile("/src/UserRepository.ts", TS_FIXTURES.repository);
 
-      const result = await analyzer.generateUnifiedDiagram("/src/UserService.ts", "class", {
-        depth: 1,
-        mode: "bidirectional",
-      });
+      const result = await analyzer.generateUnifiedDiagram(
+        "/src/UserService.ts",
+        "class",
+        {
+          depth: 1,
+          mode: "bidirectional",
+        },
+      );
 
       expect(result.type).toBe("class");
       expect(result.metadata?.depth).toBe(1);
@@ -103,9 +119,13 @@ function processData(data: string): void {
       `.trim();
       fileProvider.addFile("/src/process.ts", code);
 
-      const result = await analyzer.generateUnifiedDiagram("/src/process.ts", "flowchart", {
-        depth: 0,
-      });
+      const result = await analyzer.generateUnifiedDiagram(
+        "/src/process.ts",
+        "flowchart",
+        {
+          depth: 0,
+        },
+      );
 
       expect(result.type).toBe("flowchart");
       expect(result.metadata?.depth).toBe(0);
@@ -131,9 +151,13 @@ export function helper() {
       `.trim(),
       );
 
-      const result = await analyzer.generateUnifiedDiagram("/src/main.ts", "flowchart", {
-        depth: 1,
-      });
+      const result = await analyzer.generateUnifiedDiagram(
+        "/src/main.ts",
+        "flowchart",
+        {
+          depth: 1,
+        },
+      );
 
       expect(result.type).toBe("flowchart");
       expect(result.metadata?.depth).toBe(1);
@@ -228,11 +252,19 @@ export function helper() {
       fileProvider.addFile("/src/User.ts", TS_FIXTURES.simpleClass);
 
       await expect(
-        analyzer.generateCrossFileClassDiagram("/src/User.ts", 0 as any, "forward"),
+        analyzer.generateCrossFileClassDiagram(
+          "/src/User.ts",
+          0 as any,
+          "forward",
+        ),
       ).rejects.toThrow("Cross-file analysis depth must be between 1 and 10");
 
       await expect(
-        analyzer.generateCrossFileClassDiagram("/src/User.ts", 11 as any, "forward"),
+        analyzer.generateCrossFileClassDiagram(
+          "/src/User.ts",
+          11 as any,
+          "forward",
+        ),
       ).rejects.toThrow("Cross-file analysis depth must be between 1 and 10");
     });
   });
@@ -257,7 +289,10 @@ export function helper() {
       `.trim(),
       );
 
-      const result = await analyzer.generateCrossFileFlowchart("/src/main.ts", 1);
+      const result = await analyzer.generateCrossFileFlowchart(
+        "/src/main.ts",
+        1,
+      );
 
       expect(result.type).toBe("flowchart");
       expect(result.metadata?.depth).toBe(1);
@@ -305,7 +340,11 @@ export class UserRepository {
       fileProvider.addFile("/src/User.ts", TS_FIXTURES.simpleClass);
 
       await expect(
-        analyzer.generateCrossFileSequenceDiagram("/src/User.ts", 0 as any, "forward"),
+        analyzer.generateCrossFileSequenceDiagram(
+          "/src/User.ts",
+          0 as any,
+          "forward",
+        ),
       ).rejects.toThrow("Cross-file analysis depth must be between 1 and 10");
     });
   });
@@ -331,7 +370,11 @@ export class UserRepository {
   }
 }
       `.trim();
-      const result = await analyzer.generateDiagram(code, "sequence", "test.ts");
+      const result = await analyzer.generateDiagram(
+        code,
+        "sequence",
+        "test.ts",
+      );
 
       expect(result.type).toBe("sequence");
       expect(result.mermaidCode).toContain("sequenceDiagram");
@@ -352,7 +395,11 @@ public class UserService {
     }
 }
       `.trim();
-      const result = await analyzer.generateDiagram(code, "sequence", "test.java");
+      const result = await analyzer.generateDiagram(
+        code,
+        "sequence",
+        "test.java",
+      );
 
       expect(result.type).toBe("sequence");
       expect(result.mermaidCode).toContain("sequenceDiagram");
@@ -367,7 +414,11 @@ class UserService:
     def get_user(self, id):
         return self.repository.find_by_id(id)
       `.trim();
-      const result = await analyzer.generateDiagram(code, "sequence", "test.py");
+      const result = await analyzer.generateDiagram(
+        code,
+        "sequence",
+        "test.py",
+      );
 
       expect(result.type).toBe("sequence");
       expect(result.mermaidCode).toContain("sequenceDiagram");
@@ -385,9 +436,13 @@ export class UserService {
       `.trim();
       fileProvider.addFile("/src/UserService.ts", code);
 
-      const result = await analyzer.generateUnifiedDiagram("/src/UserService.ts", "sequence", {
-        depth: 0,
-      });
+      const result = await analyzer.generateUnifiedDiagram(
+        "/src/UserService.ts",
+        "sequence",
+        {
+          depth: 0,
+        },
+      );
 
       expect(result.type).toBe("sequence");
       expect(result.metadata?.depth).toBe(0);
@@ -418,10 +473,14 @@ export class UserRepository {
       `.trim(),
       );
 
-      const result = await analyzer.generateUnifiedDiagram("/src/UserService.ts", "sequence", {
-        depth: 1,
-        mode: "bidirectional",
-      });
+      const result = await analyzer.generateUnifiedDiagram(
+        "/src/UserService.ts",
+        "sequence",
+        {
+          depth: 1,
+          mode: "bidirectional",
+        },
+      );
 
       expect(result.type).toBe("sequence");
       expect(result.metadata?.depth).toBe(1);
@@ -429,4 +488,3 @@ export class UserRepository {
     });
   });
 });
-

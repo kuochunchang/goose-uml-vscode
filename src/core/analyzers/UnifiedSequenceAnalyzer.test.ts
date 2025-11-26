@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { UnifiedSequenceAnalyzer } from "./UnifiedSequenceAnalyzer.js";
-import type { UnifiedAST } from "../types/index.js";
 import { registerTestParsers } from "../__tests__/helpers/registerParsers.js";
 import { ParserService } from "../services/ParserService.js";
 
@@ -40,8 +39,12 @@ export class UserRepository {
       const result = analyzer.analyze(ast);
 
       expect(result.participants.length).toBeGreaterThan(0);
-      expect(result.participants.some((p) => p.name === "UserService")).toBe(true);
-      expect(result.participants.some((p) => p.name === "UserRepository")).toBe(true);
+      expect(result.participants.some((p) => p.name === "UserService")).toBe(
+        true,
+      );
+      expect(result.participants.some((p) => p.name === "UserRepository")).toBe(
+        true,
+      );
     });
 
     it("should analyze code with top-level functions", async () => {
@@ -112,7 +115,9 @@ public class UserService {
       const result = analyzer.analyze(ast);
 
       expect(result.participants.length).toBeGreaterThan(0);
-      expect(result.participants.some((p) => p.name === "UserService")).toBe(true);
+      expect(result.participants.some((p) => p.name === "UserService")).toBe(
+        true,
+      );
     });
 
     it("should analyze Python code", async () => {
@@ -129,7 +134,9 @@ class UserService:
       const result = analyzer.analyze(ast);
 
       expect(result.participants.length).toBeGreaterThan(0);
-      expect(result.participants.some((p) => p.name === "UserService")).toBe(true);
+      expect(result.participants.some((p) => p.name === "UserService")).toBe(
+        true,
+      );
     });
 
     it("should handle interfaces", async () => {
@@ -149,8 +156,12 @@ export class UserRepository implements IUserRepository {
       const result = analyzer.analyze(ast);
 
       expect(result.participants.length).toBeGreaterThan(0);
-      expect(result.participants.some((p) => p.name === "IUserRepository")).toBe(true);
-      expect(result.participants.some((p) => p.name === "UserRepository")).toBe(true);
+      expect(
+        result.participants.some((p) => p.name === "IUserRepository"),
+      ).toBe(true);
+      expect(result.participants.some((p) => p.name === "UserRepository")).toBe(
+        true,
+      );
     });
 
     it("should track interactions between classes", async () => {
@@ -197,8 +208,12 @@ export interface IUserService {
       const result = analyzer.analyze(ast);
 
       expect(result.participants.length).toBeGreaterThan(0);
-      expect(result.participants.some((p) => p.name === "IUserRepository")).toBe(true);
-      expect(result.participants.some((p) => p.name === "IUserService")).toBe(true);
+      expect(
+        result.participants.some((p) => p.name === "IUserRepository"),
+      ).toBe(true);
+      expect(result.participants.some((p) => p.name === "IUserService")).toBe(
+        true,
+      );
     });
 
     it("should handle code with both classes and interfaces", async () => {
@@ -217,8 +232,12 @@ export class UserRepository implements IRepository {
       const ast = await parserService.parse(code, "test.ts");
       const result = analyzer.analyze(ast);
 
-      expect(result.participants.some((p) => p.name === "IRepository")).toBe(true);
-      expect(result.participants.some((p) => p.name === "UserRepository")).toBe(true);
+      expect(result.participants.some((p) => p.name === "IRepository")).toBe(
+        true,
+      );
+      expect(result.participants.some((p) => p.name === "UserRepository")).toBe(
+        true,
+      );
     });
 
     it("should handle code with constructor parameters", async () => {
@@ -262,4 +281,3 @@ function privateFunc() {
     });
   });
 });
-

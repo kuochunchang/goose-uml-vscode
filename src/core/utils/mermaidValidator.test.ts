@@ -51,9 +51,11 @@ describe("MermaidValidator", () => {
       const code = `User --> Product`;
       const result = validator.validate(code);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes("Missing or invalid diagram type header"))).toBe(
-        true,
-      );
+      expect(
+        result.errors.some((e) =>
+          e.includes("Missing or invalid diagram type header"),
+        ),
+      ).toBe(true);
     });
 
     it("should detect mismatched brackets", () => {
@@ -63,7 +65,9 @@ describe("MermaidValidator", () => {
         `;
       const result = validator.validate(code);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes("Mismatched brackets"))).toBe(true);
+      expect(result.errors.some((e) => e.includes("Mismatched brackets"))).toBe(
+        true,
+      );
     });
 
     it("should detect mismatched double quotes", () => {
@@ -71,7 +75,9 @@ describe("MermaidValidator", () => {
         class User "incomplete quote`;
       const result = validator.validate(code);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes("Mismatched double quotes"))).toBe(true);
+      expect(
+        result.errors.some((e) => e.includes("Mismatched double quotes")),
+      ).toBe(true);
     });
 
     it("should detect mismatched single quotes", () => {
@@ -79,7 +85,9 @@ describe("MermaidValidator", () => {
         class User 'incomplete quote`;
       const result = validator.validate(code);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes("Mismatched single quotes"))).toBe(true);
+      expect(
+        result.errors.some((e) => e.includes("Mismatched single quotes")),
+      ).toBe(true);
     });
 
     it("should accept valid quotes", () => {
@@ -163,4 +171,3 @@ describe("MermaidValidator", () => {
     });
   });
 });
-

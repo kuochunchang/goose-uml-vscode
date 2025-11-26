@@ -79,7 +79,9 @@ describe("language-support", () => {
   describe("getUnsupportedDiagramTypeMessage", () => {
     it("should return appropriate message for unsupported sequence diagram", () => {
       const message = getUnsupportedDiagramTypeMessage("java", "sequence");
-      expect(message).toContain("sequence diagrams are currently only supported");
+      expect(message).toContain(
+        "sequence diagrams are currently only supported",
+      );
       expect(message).toContain("TypeScript/JavaScript");
       expect(message).toContain("Java");
     });
@@ -91,4 +93,3 @@ describe("language-support", () => {
     });
   });
 });
-

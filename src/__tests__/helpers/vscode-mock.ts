@@ -220,4 +220,3 @@ export function createMockVSCode(): typeof vscode {
     __mockWorkspaceFolder: mockWorkspaceFolder,
   } as any;
 }
-

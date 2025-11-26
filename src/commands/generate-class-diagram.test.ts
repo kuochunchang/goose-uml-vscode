@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createMockVSCode } from "../__tests__/helpers/vscode-mock.js";
 
 // Mock vscode module before importing anything that uses it
 vi.mock("vscode", async () => {
-  const { createMockVSCode } = await import("../__tests__/helpers/vscode-mock.js");
+  const { createMockVSCode } = await import(
+    "../__tests__/helpers/vscode-mock.js"
+  );
   return createMockVSCode();
 });
 
@@ -41,7 +42,9 @@ describe("GenerateClassDiagramCommand", () => {
     const command = new GenerateClassDiagramCommand(mockContext);
     await command.execute();
 
-    expect(mockWindow.showErrorMessage).toHaveBeenCalledWith("No active editor found");
+    expect(mockWindow.showErrorMessage).toHaveBeenCalledWith(
+      "No active editor found",
+    );
   });
 
   it("should show warning for unsupported language", async () => {
@@ -72,7 +75,9 @@ describe("GenerateClassDiagramCommand", () => {
     const command = new GenerateClassDiagramCommand(mockContext);
     await command.execute();
 
-    expect(mockWindow.showErrorMessage).toHaveBeenCalledWith("File is not in a workspace");
+    expect(mockWindow.showErrorMessage).toHaveBeenCalledWith(
+      "File is not in a workspace",
+    );
   });
 
   it("should open panel and generate diagram for supported language", async () => {
@@ -98,7 +103,9 @@ describe("GenerateClassDiagramCommand", () => {
     await command.execute();
 
     expect(DiagramPanel.createOrShow).toHaveBeenCalled();
-    expect(mockWindow.showInformationMessage).toHaveBeenCalledWith("Class diagram panel opened");
+    expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
+      "Class diagram panel opened",
+    );
   });
 
   it("should handle errors gracefully", async () => {
@@ -126,4 +133,3 @@ describe("GenerateClassDiagramCommand", () => {
     );
   });
 });
-

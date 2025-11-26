@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // Mock vscode module before importing anything that uses it
 vi.mock("vscode", async () => {
-  const { createMockVSCode } = await import("../__tests__/helpers/vscode-mock.js");
+  const { createMockVSCode } = await import(
+    "../__tests__/helpers/vscode-mock.js"
+  );
   return createMockVSCode();
 });
 
@@ -39,7 +41,9 @@ describe("GenerateSequenceDiagramCommand", () => {
     const command = new GenerateSequenceDiagramCommand(mockContext);
     await command.execute();
 
-    expect(mockWindow.showErrorMessage).toHaveBeenCalledWith("No active editor found");
+    expect(mockWindow.showErrorMessage).toHaveBeenCalledWith(
+      "No active editor found",
+    );
   });
 
   it("should show warning for unsupported diagram type", async () => {
@@ -70,7 +74,9 @@ describe("GenerateSequenceDiagramCommand", () => {
     const command = new GenerateSequenceDiagramCommand(mockContext);
     await command.execute();
 
-    expect(mockWindow.showErrorMessage).toHaveBeenCalledWith("File is not in a workspace");
+    expect(mockWindow.showErrorMessage).toHaveBeenCalledWith(
+      "File is not in a workspace",
+    );
   });
 
   it("should open panel and generate sequence diagram for supported language", async () => {
@@ -126,4 +132,3 @@ describe("GenerateSequenceDiagramCommand", () => {
     );
   });
 });
-
