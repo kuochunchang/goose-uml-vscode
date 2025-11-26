@@ -4,4 +4,4 @@ dist/
 .vscode-test/
 *.log
 coverage/
-.scannerwork
+.scannerwork/
