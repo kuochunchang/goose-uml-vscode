@@ -7,7 +7,7 @@ import * as vscode from "vscode";
 import { UMLAnalyzer } from "../core/analyzers/UMLAnalyzer.js";
 import { VSCodeFileProvider } from "../core/services/vscode-file-provider.js";
 
-export type DiagramType = "class" | "sequence" | "activity";
+export type DiagramType = "class" | "sequence" | "flowchart";
 export type AnalysisMode = "forward" | "reverse" | "bidirectional";
 
 export interface DiagramOptions {
@@ -526,8 +526,8 @@ export class DiagramPanel {
                 <button class="btn ${this._currentType === "sequence" ? "active" : ""}" data-type="sequence">
                     Sequence
                 </button>
-                <button class="btn ${this._currentType === "activity" ? "active" : ""}" data-type="activity">
-                    Activity
+                <button class="btn ${this._currentType === "flowchart" ? "active" : ""}" data-type="flowchart">
+                    Flowchart
                 </button>
 
             </div>
@@ -630,7 +630,7 @@ export class DiagramPanel {
     <div id="mermaid-code" style="display: none;">${this._mermaidCode}</div>
 
     <script type="module" nonce="${nonce}">
-        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 
         const vscode = acquireVsCodeApi();
 

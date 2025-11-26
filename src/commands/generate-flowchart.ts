@@ -1,6 +1,6 @@
 /**
- * Command: Generate Activity Diagram
- * Generates UML activity diagram (flowchart) for the current file
+ * Command: Generate Flowchart
+ * Generates UML flowchart for the current file
  */
 
 import * as vscode from "vscode";
@@ -10,7 +10,7 @@ import {
 } from "../utils/language-support.js";
 import { DiagramPanel } from "../views/diagram-panel.js";
 
-export class GenerateActivityDiagramCommand {
+export class GenerateFlowchartCommand {
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   async execute(): Promise<void> {
@@ -26,7 +26,7 @@ export class GenerateActivityDiagramCommand {
       const document = editor.document;
       if (!isSupportedLanguage(document.languageId)) {
         vscode.window.showWarningMessage(
-          `Activity diagram generation is only supported for ${getSupportedLanguagesList()} files`,
+          `Flowchart generation is only supported for ${getSupportedLanguagesList()} files`,
         );
         return;
       }
@@ -38,26 +38,26 @@ export class GenerateActivityDiagramCommand {
         return;
       }
 
-      // Open unified panel and generate activity diagram
+      // Open unified panel and generate flowchart
       const panel = DiagramPanel.createOrShow(
         this.context.extensionUri,
         document.uri,
       );
 
-      // Generate activity diagram
-      await panel.generateDiagram(document.uri, "activity", {
+      // Generate flowchart
+      await panel.generateDiagram(document.uri, "flowchart", {
         depth: 0,
-        mode: "bidirectional", // Default mode, though activity diagram ignores it for now
+        mode: "bidirectional", // Default mode, though flowchart ignores it for now
       });
 
-      vscode.window.showInformationMessage("Activity diagram panel opened");
+      vscode.window.showInformationMessage("Flowchart panel opened");
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(
         `Failed to open UML panel: ${errorMessage}`,
       );
-      console.error("Activity diagram generation error:", error);
+      console.error("Flowchart generation error:", error);
     }
   }
 }
