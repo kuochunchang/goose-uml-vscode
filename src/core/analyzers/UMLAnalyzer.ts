@@ -14,7 +14,7 @@ import type {
   UnifiedAST,
 } from "../types/index.js";
 import { MermaidValidator } from "../utils/mermaidValidator.js";
-import { ActivityAnalyzer } from "./ActivityAnalyzer.js";
+import { FlowchartAnalyzer } from "./FlowchartAnalyzer.js";
 import { CrossFileAnalyzer } from "./CrossFileAnalyzer.js";
 import { OOAnalyzer } from "./OOAnalyzer.js";
 import { UnifiedSequenceAnalyzer } from "./UnifiedSequenceAnalyzer.js";
@@ -123,7 +123,21 @@ export class UMLAnalyzer {
         }
       }
 
-      // Single-file analysis for flowchart, dependency
+      // For flowcharts, support both single-file and cross-file analysis
+      if (type === "flowchart") {
+        if (depth === 0) {
+          // Single-file flowchart
+          return await this.generateSingleFileDiagram(filePath, type);
+        } else {
+          // Cross-file flowchart
+          return await this.generateCrossFileFlowchart(
+            filePath,
+            depth as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+          );
+        }
+      }
+
+      // Single-file analysis for dependency
       return await this.generateSingleFileDiagram(filePath, type);
     } catch (error) {
       throw new Error(
@@ -176,6 +190,32 @@ export class UMLAnalyzer {
         ...result.metadata,
         depth: 0,
         singleFile: true,
+        filePath,
+      },
+    };
+  }
+
+  /**
+   * Generate cross-file flowchart
+   */
+  async generateCrossFileFlowchart(
+    filePath: string,
+    depth: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 = 1,
+  ): Promise<UMLResult> {
+    // Read file content using fileProvider
+    const code = await this.fileProvider.readFile(filePath);
+    const ast = await this.parseCode(code, filePath);
+
+    const analyzer = new FlowchartAnalyzer(this.fileProvider);
+    const mermaidCode = await analyzer.analyze(ast, { depth });
+
+    return {
+      type: "flowchart",
+      mermaidCode,
+      generationMode: "native",
+      metadata: {
+        depth,
+        singleFile: false,
         filePath,
       },
     };
@@ -621,9 +661,9 @@ export class UMLAnalyzer {
     } else if (type === "sequence") {
       // Sequence diagrams use UnifiedAST for all languages
       return this.generateSequenceDiagramFromUnifiedAST(ast, code);
-    } else if (type === "activity") {
-      // Activity diagrams (flowcharts)
-      return this.generateActivityDiagram(ast);
+    } else if (type === "flowchart") {
+      // Flowcharts
+      return await this.generateFlowchart(ast);
     }
 
     throw new Error(`Unsupported diagram type: ${type}`);
@@ -668,7 +708,7 @@ export class UMLAnalyzer {
       if (!this.parserService.canParse(normalizedPath)) {
         throw new Error(
           `No parser available for language '${language}' (file: ${normalizedPath}). ` +
-            `Supported languages: ${this.parserService.getSupportedLanguages().join(", ")}`,
+          `Supported languages: ${this.parserService.getSupportedLanguages().join(", ")}`,
         );
       }
 
@@ -683,20 +723,23 @@ export class UMLAnalyzer {
 
     throw new Error(
       `Unsupported file type: ${normalizedPath}. ` +
-        `Could not detect language from file path. ` +
-        `Supported extensions: .ts, .tsx, .js, .jsx, .java, .py, .pyi, .pyw`,
+      `Could not detect language from file path. ` +
+      `Supported extensions: .ts, .tsx, .js, .jsx, .java, .py, .pyi, .pyw`,
     );
   }
 
   /**
    * Generate activity diagram (flowchart)
    */
-  private generateActivityDiagram(ast: UnifiedAST): UMLResult {
-    const analyzer = new ActivityAnalyzer();
-    const mermaidCode = analyzer.analyze(ast);
+  /**
+   * Generate flowchart
+   */
+  private async generateFlowchart(ast: UnifiedAST): Promise<UMLResult> {
+    const analyzer = new FlowchartAnalyzer(this.fileProvider);
+    const mermaidCode = await analyzer.analyze(ast);
 
     return {
-      type: "activity",
+      type: "flowchart",
       mermaidCode,
       generationMode: "native",
       metadata: {

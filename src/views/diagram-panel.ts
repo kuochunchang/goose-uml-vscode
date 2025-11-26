@@ -7,7 +7,7 @@ import * as vscode from "vscode";
 import { UMLAnalyzer } from "../core/analyzers/UMLAnalyzer.js";
 import { VSCodeFileProvider } from "../core/services/vscode-file-provider.js";
 
-export type DiagramType = "class" | "sequence" | "activity";
+export type DiagramType = "class" | "sequence" | "flowchart";
 export type AnalysisMode = "forward" | "reverse" | "bidirectional";
 
 export interface DiagramOptions {
@@ -169,13 +169,13 @@ export class DiagramPanel {
       const generateOptions =
         this._currentType === "class" || this._currentType === "sequence"
           ? {
-              depth: this._currentOptions.depth,
-              mode: this._currentOptions.mode,
-            }
+            depth: this._currentOptions.depth,
+            mode: this._currentOptions.mode,
+          }
           : {
-              depth: 0, // Default depth for other types if needed, or handle specific types
-              mode: this._currentOptions.mode,
-            };
+            depth: 0, // Default depth for other types if needed, or handle specific types
+            mode: this._currentOptions.mode,
+          };
 
       let result;
       let fallbackUsed = false;
@@ -196,10 +196,9 @@ export class DiagramPanel {
           );
 
           vscode.window.showWarningMessage(
-            `Cross-file analysis failed. Showing single-file diagram instead. Error: ${
-              crossFileError instanceof Error
-                ? crossFileError.message
-                : String(crossFileError)
+            `Cross-file analysis failed. Showing single-file diagram instead. Error: ${crossFileError instanceof Error
+              ? crossFileError.message
+              : String(crossFileError)
             }`,
           );
 
@@ -526,8 +525,8 @@ export class DiagramPanel {
                 <button class="btn ${this._currentType === "sequence" ? "active" : ""}" data-type="sequence">
                     Sequence
                 </button>
-                <button class="btn ${this._currentType === "activity" ? "active" : ""}" data-type="activity">
-                    Activity
+                <button class="btn ${this._currentType === "flowchart" ? "active" : ""}" data-type="flowchart">
+                    Flowchart
                 </button>
 
             </div>
@@ -607,17 +606,16 @@ export class DiagramPanel {
 
     <!-- Diagram Display -->
     <div class="diagram-container" id="diagramContainer">
-      ${
-        this._mermaidCode
-          ? `<div class="mermaid">${this._mermaidCode}</div>`
-          : this._currentFile
-            ? `
+      ${this._mermaidCode
+        ? `<div class="mermaid">${this._mermaidCode}</div>`
+        : this._currentFile
+          ? `
       <div class="loading">
         <div class="spinner"></div>
         <p>Generating ${this._currentType} diagram...</p>
       </div>
       `
-            : `
+          : `
       <div class="empty-state">
         <div class="empty-state-icon">📊</div>
         <p>Select a supported file (TypeScript, JavaScript, Java, or Python) and click Refresh to generate a UML diagram</p>
@@ -630,7 +628,7 @@ export class DiagramPanel {
     <div id="mermaid-code" style="display: none;">${this._mermaidCode}</div>
 
     <script type="module" nonce="${nonce}">
-        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 
         const vscode = acquireVsCodeApi();
 

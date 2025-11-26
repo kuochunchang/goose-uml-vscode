@@ -4,7 +4,7 @@
  */
 
 import * as vscode from "vscode";
-import { GenerateActivityDiagramCommand } from "./commands/generate-activity-diagram.js";
+import { GenerateFlowchartCommand } from "./commands/generate-flowchart.js";
 import { GenerateClassDiagramCommand } from "./commands/generate-class-diagram.js";
 import { GenerateSequenceDiagramCommand } from "./commands/generate-sequence-diagram.js";
 import { JavaParser } from "./core/parsers/java/JavaParser.js";
@@ -72,8 +72,8 @@ export async function activate(
     vscode.commands.registerCommand("gooseUML.generateSequenceDiagram", () =>
       generateSequenceDiagram.execute(),
     ),
-    vscode.commands.registerCommand("gooseUML.generateActivityDiagram", () =>
-      new GenerateActivityDiagramCommand(context).execute(),
+    vscode.commands.registerCommand("gooseUML.generateFlowchart", () =>
+      new GenerateFlowchartCommand(context).execute(),
     ),
   );
 
