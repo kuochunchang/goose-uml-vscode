@@ -77,31 +77,6 @@ export async function activate(
     ),
   );
 
-  // Status bar item
-  const statusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Right,
-    100,
-  );
-  statusBarItem.text = "$(graph) UML";
-  statusBarItem.command = "gooseUML.openPanel";
-  statusBarItem.tooltip = "Open UML Diagram Panel";
-
-  function updateStatusBar(): void {
-    const editor = vscode.window.activeTextEditor;
-    if (editor && isSupportedLanguage(editor.document.languageId)) {
-      statusBarItem.show();
-    } else {
-      statusBarItem.hide();
-    }
-  }
-
-  context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor(updateStatusBar),
-    statusBarItem,
-  );
-
-  updateStatusBar();
-
   vscode.window.showInformationMessage("Goose UML is ready! 📊");
 }
 
