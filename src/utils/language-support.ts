@@ -15,8 +15,6 @@ export const SUPPORTED_LANGUAGE_IDS = [
   "python",
 ] as const;
 
-
-
 export type SupportedLanguageId = (typeof SUPPORTED_LANGUAGE_IDS)[number];
 
 // Re-export for convenience (used in other files)

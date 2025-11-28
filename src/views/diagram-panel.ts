@@ -15,8 +15,6 @@ export interface DiagramOptions {
   mode: AnalysisMode;
 }
 
-
-
 export class DiagramPanel {
   public static currentPanel: DiagramPanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
