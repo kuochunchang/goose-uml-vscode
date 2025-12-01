@@ -76,8 +76,33 @@ export function activate(context: vscode.ExtensionContext): void {
     const generateClassDiagram = new GenerateClassDiagramCommand(context);
     const generateSequenceDiagram = new GenerateSequenceDiagramCommand(context);
 
+    // Listen for active editor changes to auto-update UML panel
+    const onEditorChange = vscode.window.onDidChangeActiveTextEditor(
+      (editor) => {
+        // Only update if panel exists and is visible
+        if (!DiagramPanel.currentPanel?.isVisible) {
+          return;
+        }
+
+        if (!editor) {
+          return;
+        }
+
+        const document = editor.document;
+
+        // Only update for supported languages
+        if (!isSupportedLanguage(document.languageId)) {
+          return;
+        }
+
+        // Update the panel with the new file
+        DiagramPanel.currentPanel.updateFile(document.uri);
+      },
+    );
+
     context.subscriptions.push(
       openUMLPanel,
+      onEditorChange,
       vscode.commands.registerCommand("gooseUML.generateClassDiagram", () => {
         try {
           return generateClassDiagram.execute();

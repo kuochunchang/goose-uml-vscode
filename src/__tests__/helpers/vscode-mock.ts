@@ -7,6 +7,18 @@ import { vi } from "vitest";
 import type * as vscode from "vscode";
 
 export function createMockVSCode(): typeof vscode {
+  const mockWebviewPanel = {
+    webview: {
+      html: "",
+      onDidReceiveMessage: vi.fn(),
+      postMessage: vi.fn(),
+    },
+    onDidDispose: vi.fn(),
+    reveal: vi.fn(),
+    dispose: vi.fn(),
+    visible: true,
+  };
+
   const mockWindow = {
     activeTextEditor: undefined as vscode.TextEditor | undefined,
     showErrorMessage: vi.fn(),
@@ -20,13 +32,16 @@ export function createMockVSCode(): typeof vscode {
       hide: vi.fn(),
       dispose: vi.fn(),
     })),
-    onDidChangeActiveTextEditor: {
-      dispose: vi.fn(),
-    },
+    createWebviewPanel: vi.fn(() => mockWebviewPanel),
+    onDidChangeActiveTextEditor: vi.fn(() => ({ dispose: vi.fn() })),
   };
 
   const mockWorkspace = {
     getWorkspaceFolder: vi.fn(),
+    asRelativePath: vi.fn((uri: vscode.Uri | string) => {
+      if (typeof uri === "string") return uri;
+      return uri.fsPath?.replace("/mock/workspace/", "") || "";
+    }),
   };
 
   const mockCommands = {
@@ -218,5 +233,6 @@ export function createMockVSCode(): typeof vscode {
     __mockTextDocument: mockTextDocument,
     __mockTextEditor: mockTextEditor,
     __mockWorkspaceFolder: mockWorkspaceFolder,
+    __mockWebviewPanel: mockWebviewPanel,
   } as unknown as typeof vscode;
 }
