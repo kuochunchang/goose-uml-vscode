@@ -114,7 +114,6 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     console.log("Goose UML: All commands registered successfully");
-    vscode.window.showInformationMessage("Goose UML is ready! 📊");
   } catch (error) {
     console.error("Fatal error during Goose UML activation:", error);
     vscode.window.showErrorMessage(

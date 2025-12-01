@@ -24,7 +24,7 @@ export class DiagramPanel {
   // Current state
   private _currentFile: vscode.Uri | undefined;
   private _currentType: DiagramType = "class";
-  private _currentOptions: DiagramOptions = { depth: 0, mode: "bidirectional" };
+  private _currentOptions: DiagramOptions = { depth: 0, mode: "forward" };
   private _mermaidCode: string = "";
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
@@ -546,6 +546,16 @@ export class DiagramPanel {
                 <i class="codicon codicon-cloud-download"></i>
                 <span class="tooltiptext">Download diagram as SVG file</span>
             </button>
+        </div>
+
+        <!-- Row 2: Depth & Zoom Controls -->
+        <div class="toolbar-row">
+            <span class="toolbar-label">Depth:</span>
+            <div class="btn-group" id="depthSelector">
+                <button class="btn" id="depthDecreaseBtn" ${this._currentOptions.depth === 0 ? "disabled" : ""}>－</button>
+                <span class="depth-display" id="depthDisplay">${this._currentOptions.depth}</span>
+                <button class="btn" id="depthIncreaseBtn" ${this._currentOptions.depth === 10 ? "disabled" : ""}>＋</button>
+            </div>
 
             <div class="separator"></div>
 
@@ -557,21 +567,8 @@ export class DiagramPanel {
             </div>
         </div>
 
-        <!-- Row 2: Class & Sequence Diagram Options -->
+        <!-- Row 3: Mode (Class & Sequence Diagram Only) -->
         <div class="toolbar-row" id="classOptions" style="display: ${this._currentType === "class" || this._currentType === "sequence" ? "flex" : "none"}">
-            <span class="toolbar-label tooltip">
-                Depth:
-                <span class="tooltiptext">
-                    0: Single file only<br>
-                    1-10: Cross-file analysis with increasing depth
-                </span>
-            </span>
-            <div class="btn-group" id="depthSelector">
-                <button class="btn" id="depthDecreaseBtn" ${this._currentOptions.depth === 0 ? "disabled" : ""}>－</button>
-                <span class="depth-display" id="depthDisplay">${this._currentOptions.depth}</span>
-                <button class="btn" id="depthIncreaseBtn" ${this._currentOptions.depth === 10 ? "disabled" : ""}>＋</button>
-            </div>
-
             <span class="toolbar-label tooltip">
                 Mode:
                 <span class="tooltiptext">

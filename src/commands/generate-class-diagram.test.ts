@@ -110,14 +110,20 @@ describe("GenerateClassDiagramCommand", () => {
     mockWorkspace.getWorkspaceFolder.mockReturnValue(mockWorkspaceFolder);
 
     const { DiagramPanel } = await import("../views/diagram-panel.js");
+    const mockGenerateDiagram = vi.fn();
     vi.mocked(DiagramPanel.createOrShow).mockReturnValue({
-      generateDiagram: vi.fn(),
+      generateDiagram: mockGenerateDiagram,
     } as ReturnType<typeof DiagramPanel.createOrShow>);
 
     const command = new GenerateClassDiagramCommand(mockContext);
     await command.execute();
 
     expect(DiagramPanel.createOrShow).toHaveBeenCalled();
+    expect(mockGenerateDiagram).toHaveBeenCalledWith(
+      mockEditor.document.uri,
+      "class",
+      { depth: 0, mode: "forward" },
+    );
     expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
       "Class diagram panel opened",
     );

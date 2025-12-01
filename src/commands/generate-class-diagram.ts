@@ -44,10 +44,10 @@ export class GenerateClassDiagramCommand {
         document.uri,
       );
 
-      // Generate class diagram with default settings (depth=0, mode=bidirectional)
+      // Generate class diagram with default settings (depth=0, mode=forward)
       await panel.generateDiagram(document.uri, "class", {
         depth: 0,
-        mode: "bidirectional",
+        mode: "forward",
       });
 
       vscode.window.showInformationMessage("Class diagram panel opened");
