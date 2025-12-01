@@ -153,4 +153,3 @@ git push origin v0.2.4 --force
 ```bash
 vsce publish
 ```
-
