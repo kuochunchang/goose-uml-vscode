@@ -5,12 +5,14 @@
 您遇到的問題是：命令在列表中顯示，但執行時報錯"找不到命令"。
 
 這通常是因為：
+
 1. `activate` 函數執行時出錯，導致命令沒有正確註冊
 2. 可能是 Parser 初始化失敗
 
 ## 修復內容
 
 已修改 `src/extension.ts`：
+
 - ✅ 移除 `async` 關鍵字（沒有實際的異步操作）
 - ✅ 添加完整的錯誤處理
 - ✅ 確保即使 Parser 初始化失敗，命令仍能註冊
@@ -19,6 +21,7 @@
 ## 重新建置步驟
 
 ### 1. 清理舊文件
+
 ```bash
 cd /Users/guojun/workspace/goose-uml-vscode
 rm -rf dist
@@ -26,22 +29,26 @@ rm -f *.vsix
 ```
 
 ### 2. 重新建置
+
 ```bash
 npm run build
 ```
 
 ### 3. 檢查建置結果
+
 ```bash
 ls -lh dist/extension.js
 # 應該顯示文件存在且大小合理（約 4-5 KB）
 ```
 
 ### 4. 打包 VSIX
+
 ```bash
 npm run package
 ```
 
 ### 5. 檢查 VSIX
+
 ```bash
 ls -lh *.vsix
 # 應該顯示 goose-uml-vscode-0.2.4.vsix，大小約 4.7 MB
@@ -52,17 +59,20 @@ ls -lh *.vsix
 ### 1. 完全卸載舊版本
 
 在 VS Code 中：
+
 1. 打開擴展面板（Cmd+Shift+X）
 2. 找到 "Goose UML"
 3. 點擊卸載
 4. **重啟 VS Code**（重要！）
 
 或使用命令行：
+
 ```bash
 code --uninstall-extension kuochunchang.goose-uml-vscode
 ```
 
 ### 2. 清除緩存
+
 ```bash
 rm -rf ~/.vscode/extensions/kuochunchang.goose-uml-vscode-*
 ```
@@ -70,12 +80,14 @@ rm -rf ~/.vscode/extensions/kuochunchang.goose-uml-vscode-*
 ### 3. 安裝新版本
 
 **方法 A: 使用命令行（推薦）**
+
 ```bash
 cd /Users/guojun/workspace/goose-uml-vscode
 code --install-extension goose-uml-vscode-0.2.4.vsix --force
 ```
 
 **方法 B: 在 VS Code 中手動安裝**
+
 1. 打開 VS Code
 2. 按 Cmd+Shift+P
 3. 輸入 "Extensions: Install from VSIX..."
@@ -141,4 +153,3 @@ git push origin v0.2.4 --force
 ```bash
 vsce publish
 ```
-
