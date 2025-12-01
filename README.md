@@ -64,6 +64,7 @@ Class diagrams show the static structure of your code, including:
 - Associations and dependencies
 
 **Example Use Cases:**
+
 - Understanding existing codebases
 - Documenting API designs
 - Planning refactoring efforts
@@ -79,6 +80,7 @@ Sequence diagrams illustrate how objects interact over time:
 - Return values and control flow
 
 **Example Use Cases:**
+
 - Debugging complex workflows
 - Understanding async operations
 - API interaction documentation
@@ -94,6 +96,7 @@ Activity diagrams map out the flow of control:
 - Error handling paths
 
 **Example Use Cases:**
+
 - Business logic documentation
 - Algorithm visualization
 - Process flow mapping
@@ -116,17 +119,16 @@ Control how many levels of dependencies to analyze:
 - **Focused Mode** - Specific classes/methods only
 - **Simplified Mode** - High-level overview
 
-
 ## Commands
 
 Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
-| Command | Description | Shortcut |
-|---------|-------------|----------|
-| `Goose UML: Open UML Panel` | Open interactive diagram panel | `Ctrl+Shift+U` / `Cmd+Shift+U` |
-| `Goose UML: Generate Class Diagram` | Generate class diagram for current file | - |
-| `Goose UML: Generate Sequence Diagram` | Generate sequence diagram for current file | - |
-| `Goose UML: Generate Activity Diagram` | Generate activity diagram for current file | - |
+| Command                                | Description                                | Shortcut                       |
+| -------------------------------------- | ------------------------------------------ | ------------------------------ |
+| `Goose UML: Open UML Panel`            | Open interactive diagram panel             | `Ctrl+Shift+U` / `Cmd+Shift+U` |
+| `Goose UML: Generate Class Diagram`    | Generate class diagram for current file    | -                              |
+| `Goose UML: Generate Sequence Diagram` | Generate sequence diagram for current file | -                              |
+| `Goose UML: Generate Activity Diagram` | Generate activity diagram for current file | -                              |
 
 ## License
 
@@ -136,4 +138,3 @@ MIT License - see [LICENSE](LICENSE) for details
 
 - [GitHub Repository](https://github.com/kuochunchang/goose-uml-vscode)
 - [VS Code Marketplace](https://marketplace.visualstudio.com/)
-
