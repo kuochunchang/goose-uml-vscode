@@ -6,7 +6,8 @@
       "Bash(npm run test:coverage:*)",
       "Bash(node -e:*)",
       "Bash(npm run build:*)",
-      "Bash(npm:*)"
+      "Bash(npm:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
