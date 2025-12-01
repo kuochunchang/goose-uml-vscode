@@ -5,6 +5,30 @@ All notable changes to the "Goose UML" extension will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-12-02
+
+### Added
+
+- Auto-follow active editor in UML Panel: When the panel is open, switching to another supported file automatically updates the diagram
+- New `updateFile()` method in DiagramPanel for dynamic file switching
+- Comprehensive tests for auto-follow functionality
+
+### Changed
+
+- Changed class diagram default mode from "bidirectional" to "forward" for more intuitive dependency visualization
+- Improved toolbar layout: moved depth control to row 2 for better visibility
+- Removed activation notification to reduce notification spam
+
+### Fixed
+
+- Enhanced panel visibility tracking with `isVisible` getter
+
+## [0.3.1] - 2025-12-02
+
+### Changed
+
+- Documentation formatting improvements
+
 ## [0.2.6] - 2025-12-01
 
 ### Fixed
@@ -76,6 +100,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Context menu integration
 - Editor toolbar button
 
+[0.3.2]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.2.6...v0.3.1
+[0.2.6]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.2.0...v0.2.3
