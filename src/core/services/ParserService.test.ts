@@ -5,6 +5,7 @@ import { registerTestParsers } from "../__tests__/helpers/registerParsers.js";
 describe("ParserService", () => {
   beforeEach(() => {
     // Reset singleton instance
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ParserService as any).instance = undefined;
     registerTestParsers();
   });

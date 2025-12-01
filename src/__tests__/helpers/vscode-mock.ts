@@ -177,9 +177,9 @@ export function createMockVSCode(): typeof vscode {
   };
 
   return {
-    window: mockWindow as any,
-    workspace: mockWorkspace as any,
-    commands: mockCommands as any,
+    window: mockWindow as unknown as typeof vscode.window,
+    workspace: mockWorkspace as unknown as typeof vscode.workspace,
+    commands: mockCommands as unknown as typeof vscode.commands,
     StatusBarAlignment: {
       Left: 1,
       Right: 2,
@@ -218,5 +218,5 @@ export function createMockVSCode(): typeof vscode {
     __mockTextDocument: mockTextDocument,
     __mockTextEditor: mockTextEditor,
     __mockWorkspaceFolder: mockWorkspaceFolder,
-  } as any;
+  } as unknown as typeof vscode;
 }

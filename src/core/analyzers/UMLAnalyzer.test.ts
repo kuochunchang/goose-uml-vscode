@@ -3,6 +3,7 @@ import { UMLAnalyzer } from "./UMLAnalyzer.js";
 import { InMemoryFileProvider } from "../__tests__/helpers/InMemoryFileProvider.js";
 import { TS_FIXTURES } from "../__tests__/fixtures/typescript-fixtures.js";
 import { registerTestParsers } from "../__tests__/helpers/registerParsers.js";
+import type { DiagramType } from "../types/uml.js";
 
 describe("UMLAnalyzer", () => {
   let fileProvider: InMemoryFileProvider;
@@ -50,7 +51,11 @@ function calculateGrade(score: number): string {
     it("should throw error for unsupported diagram type", async () => {
       const code = TS_FIXTURES.simpleClass;
       await expect(
-        analyzer.generateDiagram(code, "dependency" as any, "test.ts"),
+        analyzer.generateDiagram(
+          code,
+          "dependency" as unknown as DiagramType,
+          "test.ts",
+        ),
       ).rejects.toThrow();
     });
 
@@ -254,7 +259,7 @@ export function helper() {
       await expect(
         analyzer.generateCrossFileClassDiagram(
           "/src/User.ts",
-          0 as any,
+          0 as unknown as number,
           "forward",
         ),
       ).rejects.toThrow("Cross-file analysis depth must be between 1 and 10");
@@ -262,7 +267,7 @@ export function helper() {
       await expect(
         analyzer.generateCrossFileClassDiagram(
           "/src/User.ts",
-          11 as any,
+          11 as unknown as number,
           "forward",
         ),
       ).rejects.toThrow("Cross-file analysis depth must be between 1 and 10");
@@ -342,7 +347,7 @@ export class UserRepository {
       await expect(
         analyzer.generateCrossFileSequenceDiagram(
           "/src/User.ts",
-          0 as any,
+          0 as unknown as number,
           "forward",
         ),
       ).rejects.toThrow("Cross-file analysis depth must be between 1 and 10");
