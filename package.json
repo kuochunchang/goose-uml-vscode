@@ -21,6 +21,10 @@
     "python"
   ],
   "activationEvents": [
+    "onCommand:gooseUML.openPanel",
+    "onCommand:gooseUML.generateClassDiagram",
+    "onCommand:gooseUML.generateSequenceDiagram",
+    "onCommand:gooseUML.generateFlowchart",
     "onLanguage:typescript",
     "onLanguage:javascript",
     "onLanguage:java",
@@ -46,8 +50,8 @@
         "category": "Goose UML"
       },
       {
-        "command": "gooseUML.generateActivityDiagram",
-        "title": "Generate Activity Diagram",
+        "command": "gooseUML.generateFlowchart",
+        "title": "Generate Flowchart",
         "category": "Goose UML"
       }
     ],
@@ -85,7 +89,7 @@
         },
         {
           "when": "editorLangId == typescript || editorLangId == javascript || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == java || editorLangId == python",
-          "command": "gooseUML.generateActivityDiagram",
+          "command": "gooseUML.generateFlowchart",
           "group": "gooseUML@3"
         }
       ]
