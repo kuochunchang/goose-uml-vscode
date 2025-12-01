@@ -1,0 +1,77 @@
+name: Pre-Release
+
+on:
+  push:
+    branches:
+      - release/**
+  workflow_dispatch:  # Manual trigger option
+
+jobs:
+  pre-release-test:
+    name: Pre-Release Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build extension
+        run: npm run compile:production
+
+      - name: Package extension
+        run: npm run package
+
+      - name: Verify package.json version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Extension version: $VERSION"
+          
+          # Check if version matches semantic versioning
+          if ! [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Invalid version format. Expected X.Y.Z"
+            exit 1
+          fi
+
+      - name: Upload VSIX for testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-pre-release-${{ github.sha }}
+          path: '*.vsix'
+          retention-days: 14
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const vsixFiles = fs.readdirSync('.').filter(f => f.endsWith('.vsix'));
+            const vsixFile = vsixFiles[0];
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Pre-release build successful!\n\n📦 VSIX package: \`${vsixFile}\`\n\nDownload from the Actions artifacts to test manually before release.`
+            });
+
+
+

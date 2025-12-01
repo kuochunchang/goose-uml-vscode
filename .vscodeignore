@@ -1,0 +1,40 @@
+# Build artifacts
+src/
+*.ts
+!dist/**/*.d.ts
+tsconfig.json
+vitest.config.ts
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.spec.ts
+coverage/
+temp/
+
+# Development files
+.vscode/
+.github/
+.gitignore
+.scannerwork/
+.claude/
+eslint.config.mjs
+sonar-project.properties
+
+# Documentation (keep only README)
+AGENT.md
+CLAUDE.md
+package.json.backup
+
+# Dependencies (keep only production dependencies)
+node_modules/
+!node_modules/tree-sitter/**
+!node_modules/tree-sitter-java/**
+!node_modules/tree-sitter-python/**
+!node_modules/tree-sitter-typescript/**
+
+# Logs
+*.log
+npm-debug.log*
+
+
