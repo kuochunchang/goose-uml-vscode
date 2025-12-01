@@ -266,6 +266,30 @@ export class DiagramPanel {
   }
 
   /**
+   * Update the current file and regenerate diagram
+   * Used when the active editor changes
+   */
+  public updateFile(file: vscode.Uri): void {
+    if (this._currentFile?.fsPath === file.fsPath) {
+      return; // Same file, no need to update
+    }
+
+    this._currentFile = file;
+    // Reset mermaid code to show loading state
+    this._mermaidCode = "";
+    // Update HTML to show loading state immediately
+    this._panel.webview.html = this._getWebviewContent();
+    void this._generateDiagram();
+  }
+
+  /**
+   * Check if the panel is currently visible
+   */
+  public get isVisible(): boolean {
+    return this._panel.visible;
+  }
+
+  /**
    * Dispose of the panel
    */
   public dispose(): void {
