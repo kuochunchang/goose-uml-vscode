@@ -18,3 +18,4 @@ echo ""
 echo "📋 To install:"
 echo "   code --install-extension goose-uml-vscode-0.2.4.vsix"
 
+
