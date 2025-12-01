@@ -2,7 +2,7 @@
   "name": "goose-uml-vscode",
   "displayName": "Goose UML",
   "description": "Generate UML class and sequence diagrams for TypeScript, JavaScript, Java, and Python",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "publisher": "kuochunchang",
   "engines": {
     "vscode": "^1.85.0"
