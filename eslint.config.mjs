@@ -4,12 +4,25 @@ import prettier from "eslint-plugin-prettier";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
+  // Global ignores must come first
+  {
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "*.js",
+      "*.d.ts",
+      "coverage/**",
+      "vitest.config.ts",
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/__tests__/**",
+    ],
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   prettierConfig,
   {
     files: ["**/*.ts"],
-    ignores: ["**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"],
     languageOptions: {
       parserOptions: {
         project: true,
@@ -58,16 +71,6 @@ export default tseslint.config(
       ],
       "prettier/prettier": "error",
     },
-  },
-  {
-    ignores: [
-      "dist/**",
-      "node_modules/**",
-      "*.js",
-      "*.d.ts",
-      "coverage/**",
-      "vitest.config.ts",
-    ],
   },
 );
 

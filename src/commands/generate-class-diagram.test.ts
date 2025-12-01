@@ -2,9 +2,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // Mock vscode module before importing anything that uses it
 vi.mock("vscode", async () => {
-  const { createMockVSCode } = await import(
-    "../__tests__/helpers/vscode-mock.js"
-  );
+  const { createMockVSCode } =
+    await import("../__tests__/helpers/vscode-mock.js");
   return createMockVSCode();
 });
 
