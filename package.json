@@ -103,7 +103,6 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@code-review-goose/analysis-types": "file:../../code-review-goose/packages/analysis-types",
     "tree-sitter": "^0.21.0",
     "tree-sitter-java": "^0.21.0",
     "tree-sitter-python": "^0.21.0",

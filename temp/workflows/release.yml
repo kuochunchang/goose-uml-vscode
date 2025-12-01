@@ -41,7 +41,7 @@ jobs:
         continue-on-error: false
 
       - name: Build extension
-        run: npm run build
+        run: npm run compile:production
         continue-on-error: false
 
       - name: Package extension
@@ -94,19 +94,19 @@ jobs:
           files: '*.vsix'
           generate_release_notes: true
           body: |
-            ## Installation
+            ## 安装方式
             
             ### VS Code Marketplace
             ```bash
-            code --install-extension kuochunchang.goose-uml-vscode
+            code --install-extension kuochunchang.goose-sonarqube-vscode
             ```
             
             ### Open VSX Registry
             ```bash
-            code --install-extension kuochunchang.goose-uml-vscode
+            code --install-extension kuochunchang.goose-sonarqube-vscode
             ```
             
-            ### Manual Installation
-            Download the `.vsix` file below and install via VS Code
+            ### 手动安装
+            下载下方的 `.vsix` 文件并通过 VS Code 安装
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
