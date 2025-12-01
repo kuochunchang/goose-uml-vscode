@@ -20,17 +20,33 @@ vi.mock("../views/diagram-panel.js", () => ({
 import { GenerateFlowchartCommand } from "./generate-flowchart.js";
 import type * as vscode from "vscode";
 
+interface MockWindow {
+  activeTextEditor?: vscode.TextEditor;
+  showErrorMessage: ReturnType<typeof vi.fn>;
+  showWarningMessage: ReturnType<typeof vi.fn>;
+  showInformationMessage: ReturnType<typeof vi.fn>;
+}
+
+interface MockWorkspace {
+  getWorkspaceFolder: ReturnType<typeof vi.fn>;
+}
+
+interface MockVSCode {
+  __mockWindow: MockWindow;
+  __mockWorkspace: MockWorkspace;
+  __mockExtensionContext: vscode.ExtensionContext;
+}
+
 describe("GenerateFlowchartCommand", () => {
   let mockContext: vscode.ExtensionContext;
-  let mockWindow: any;
-  let mockWorkspace: any;
+  let mockWindow: MockWindow;
+  let mockWorkspace: MockWorkspace;
 
   beforeEach(async () => {
-    const vscode = await import("vscode");
-    const mock = vscode as any;
-    mockContext = mock.__mockExtensionContext as any;
-    mockWindow = mock.__mockWindow;
-    mockWorkspace = mock.__mockWorkspace;
+    const vscode = (await import("vscode")) as unknown as MockVSCode;
+    mockContext = vscode.__mockExtensionContext;
+    mockWindow = vscode.__mockWindow;
+    mockWorkspace = vscode.__mockWorkspace;
 
     vi.clearAllMocks();
   });
@@ -96,7 +112,7 @@ describe("GenerateFlowchartCommand", () => {
     const { DiagramPanel } = await import("../views/diagram-panel.js");
     vi.mocked(DiagramPanel.createOrShow).mockReturnValue({
       generateDiagram: vi.fn(),
-    } as any);
+    } as ReturnType<typeof DiagramPanel.createOrShow>);
 
     const command = new GenerateFlowchartCommand(mockContext);
     await command.execute();
