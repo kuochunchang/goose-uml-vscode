@@ -26,13 +26,11 @@ AGENT.md
 CLAUDE.md
 package.json.backup
 
-# Dependencies (keep only production dependencies)
-node_modules/
-!node_modules/tree-sitter/**
-!node_modules/tree-sitter-java/**
-!node_modules/tree-sitter-python/**
-!node_modules/tree-sitter-typescript/**
-!node_modules/node-gyp-build/**
+# Dependencies - exclude root node_modules (dependencies are in dist/node_modules)
+node_modules/**
+
+# Keep dist/node_modules (tree-sitter native modules)
+!dist/node_modules/**
 
 # Logs
 *.log
