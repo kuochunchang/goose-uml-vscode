@@ -5,6 +5,17 @@ All notable changes to the "Goose UML" extension will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2025-12-03
+
+### Added
+
+- Custom UML icon for editor title bar (visible in VS Code, not supported in Cursor IDE)
+
+### Fixed
+
+- Upgraded tree-sitter to support large files (>32KB)
+- Updated packaging configuration for native modules
+
 ## [0.3.2] - 2025-12-02
 
 ### Added
@@ -100,6 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Context menu integration
 - Editor toolbar button
 
+[0.3.3]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.2.6...v0.3.1
 [0.2.6]: https://github.com/kuochunchang/goose-uml-vscode/compare/v0.2.5...v0.2.6
