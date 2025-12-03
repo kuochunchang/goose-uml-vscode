@@ -37,7 +37,10 @@
         "command": "gooseUML.openPanel",
         "title": "Open UML Panel",
         "category": "Goose UML",
-        "icon": "$(type-hierarchy)"
+        "icon": {
+          "light": "resources/uml-icon.svg",
+          "dark": "resources/uml-icon.svg"
+        }
       },
       {
         "command": "gooseUML.generateClassDiagram",
@@ -66,9 +69,9 @@
     "menus": {
       "editor/title": [
         {
-          "when": "editorLangId == typescript || editorLangId == javascript || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == java || editorLangId == python",
           "command": "gooseUML.openPanel",
-          "group": "navigation"
+          "group": "navigation",
+          "when": "resourceLangId == typescript || resourceLangId == javascript || resourceLangId == typescriptreact || resourceLangId == javascriptreact || resourceLangId == java || resourceLangId == python"
         }
       ],
       "editor/context": [
@@ -98,7 +101,9 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "package": "vsce package",
+    "prepackage": "mkdir -p dist/node_modules && cp -r node_modules/tree-sitter node_modules/tree-sitter-java node_modules/tree-sitter-python node_modules/tree-sitter-typescript node_modules/tree-sitter-javascript node_modules/node-gyp-build dist/node_modules/ 2>/dev/null; find node_modules -name 'node-addon-api' -type d -exec cp -r {} dist/node_modules/ \\; 2>/dev/null || true",
+    "package": "vsce package --no-dependencies",
+    "postpackage": "rm -rf dist/node_modules",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
@@ -111,6 +116,17 @@
     "tree-sitter-java": "^0.23.5",
     "tree-sitter-python": "^0.23.6",
     "tree-sitter-typescript": "^0.23.2"
+  },
+  "overrides": {
+    "tree-sitter-java": {
+      "tree-sitter": "$tree-sitter"
+    },
+    "tree-sitter-python": {
+      "tree-sitter": "$tree-sitter"
+    },
+    "tree-sitter-typescript": {
+      "tree-sitter": "$tree-sitter"
+    }
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
