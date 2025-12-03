@@ -673,8 +673,7 @@ export class DiagramPanel {
         let zoomReady = false;
 
         const ZOOM_STEP = 1.2;
-        const MIN_ZOOM = 0.2;
-        const MAX_ZOOM = 10;
+        const MIN_ZOOM = 0.1;
 
         function applyTransform() {
             const container = document.querySelector('.mermaid');
@@ -684,7 +683,7 @@ export class DiagramPanel {
         }
 
         function zoomIn() {
-            currentZoom = Math.min(currentZoom * ZOOM_STEP, MAX_ZOOM);
+            currentZoom = currentZoom * ZOOM_STEP;
             applyTransform();
         }
 
