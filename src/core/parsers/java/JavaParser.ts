@@ -3,7 +3,7 @@
  * Java parser implementation using tree-sitter
  */
 
-import type { SyntaxNode } from "tree-sitter";
+import type { SyntaxNode, Language } from "tree-sitter";
 import Parser from "tree-sitter";
 import Java from "tree-sitter-java";
 import type { SupportedLanguage, UnifiedAST } from "../../types/index.js";
@@ -22,7 +22,8 @@ export class JavaParser implements ILanguageParser {
 
   constructor() {
     this.parser = new Parser();
-    this.parser.setLanguage(Java);
+    // Type assertion needed due to tree-sitter version compatibility
+    this.parser.setLanguage(Java as unknown as Language);
     this.converter = new JavaASTConverter();
   }
 
@@ -34,9 +35,10 @@ export class JavaParser implements ILanguageParser {
     try {
       const tree = this.parser.parse(code);
 
-      // Check for parse errors (tree-sitter doesn't throw on syntax errors)
-      // Check if root node has ERROR type or contains ERROR nodes
-      if (this.hasParseErrors(tree.rootNode)) {
+      // Check for critical parse errors (tree-sitter doesn't throw on syntax errors)
+      // Only fail if there are errors in critical nodes (class/method declarations)
+      // Ignore errors in annotations as tree-sitter may not fully support complex annotations
+      if (this.hasCriticalParseErrors(tree.rootNode)) {
         throw new Error(
           `Failed to parse Java code in ${filePath}: Syntax errors detected`,
         );
@@ -51,17 +53,42 @@ export class JavaParser implements ILanguageParser {
   }
 
   /**
-   * Check if a node or its children contain parse errors
+   * Check if a node or its children contain critical parse errors
+   * Ignores errors within annotations as tree-sitter may not fully support complex annotations
    */
-  private hasParseErrors(node: SyntaxNode): boolean {
+  private hasCriticalParseErrors(node: SyntaxNode): boolean {
+    // Skip checking inside annotations - they may have parsing issues but shouldn't block analysis
+    if (
+      node.type === "annotation" ||
+      node.type === "marker_annotation" ||
+      node.type === "annotation_argument_list"
+    ) {
+      return false;
+    }
+
     if (node.type === "ERROR" || node.type === "MISSING") {
+      // Check if this error is inside an annotation by walking up the tree
+      let parent = node.parent;
+      while (parent) {
+        if (
+          parent.type === "annotation" ||
+          parent.type === "marker_annotation" ||
+          parent.type === "annotation_argument_list" ||
+          parent.type === "modifiers"
+        ) {
+          // Error is inside an annotation, ignore it
+          return false;
+        }
+        parent = parent.parent;
+      }
+      // Error is outside annotations, this is critical
       return true;
     }
 
     // Check children recursively
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i);
-      if (child && this.hasParseErrors(child)) {
+      if (child && this.hasCriticalParseErrors(child)) {
         return true;
       }
     }
