@@ -585,8 +585,8 @@ export class DiagramPanel {
 
             <span class="toolbar-label">Zoom:</span>
             <div class="btn-group" id="zoomControls">
-                <button class="btn" id="zoomOutBtn" disabled>－</button>
-                <button class="btn" id="zoomInBtn" disabled>＋</button>
+                <button class="btn btn-icon" id="zoomOutBtn" disabled title="Zoom out"><i class="codicon codicon-zoom-out"></i></button>
+                <button class="btn btn-icon" id="zoomInBtn" disabled title="Zoom in"><i class="codicon codicon-zoom-in"></i></button>
                 <button class="btn" id="resetZoomBtn" disabled>Reset</button>
             </div>
         </div>
