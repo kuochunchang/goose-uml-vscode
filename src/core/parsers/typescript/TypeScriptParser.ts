@@ -4,7 +4,7 @@
  */
 
 import Parser from "tree-sitter";
-import type { SyntaxNode } from "tree-sitter";
+import type { SyntaxNode, Language } from "tree-sitter";
 import TypeScript from "tree-sitter-typescript";
 import type { ILanguageParser } from "../common/ILanguageParser.js";
 import type { UnifiedAST, SupportedLanguage } from "../../types/index.js";
@@ -22,7 +22,8 @@ export class TypeScriptParser implements ILanguageParser {
 
   constructor() {
     this.parser = new Parser();
-    this.parser.setLanguage(TypeScript.typescript);
+    // Type assertion needed due to tree-sitter version compatibility
+    this.parser.setLanguage(TypeScript.typescript as unknown as Language);
     this.converter = new TypeScriptASTConverter();
   }
 

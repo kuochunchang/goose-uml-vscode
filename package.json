@@ -107,10 +107,10 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "tree-sitter": "^0.21.0",
-    "tree-sitter-java": "^0.21.0",
-    "tree-sitter-python": "^0.21.0",
-    "tree-sitter-typescript": "^0.21.0"
+    "tree-sitter": "^0.22.4",
+    "tree-sitter-java": "^0.23.5",
+    "tree-sitter-python": "^0.23.6",
+    "tree-sitter-typescript": "^0.23.2"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
